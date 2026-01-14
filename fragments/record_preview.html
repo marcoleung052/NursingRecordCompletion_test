@@ -1,0 +1,25 @@
+<div class="card">
+  <h2>紀錄預覽</h2>
+  <div id="previewMeta" class="small"></div>
+  <div id="previewContent" style="margin-top:12px"></div>
+  <div style="margin-top:12px">
+    <button id="btnBack" class="btn">回病患列表</button>
+  </div>
+</div>
+
+<script>
+  window.addEventListener('app:navigate', function (e) {
+    if (e.detail.page !== 'record_preview') return;
+    const params = e.detail.params || {};
+    const pid = params.patientId;
+    const rid = params.recordId;
+    const state = window.App.getState();
+    const patient = state.patients.find(p => p.id === pid) || { name: '未知' };
+    const rec = (state.records[pid] || []).find(r => r.id === rid) || (state.records[pid] || [])[0];
+
+    document.getElementById('previewMeta').textContent = `病患：${patient.name}；紀錄：${rec ? rec.title : '無紀錄'}`;
+    document.getElementById('previewContent').textContent = rec ? rec.content : '沒有內容可顯示';
+
+    document.getElementById('btnBack').onclick = () => window.App.navigate('patients');
+  });
+</script>
