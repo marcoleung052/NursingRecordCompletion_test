@@ -1,0 +1,19 @@
+<div class="card">
+  <h2>設定</h2>
+  <p class="small">目前使用者：<span id="curUser">未登入</span></p>
+  <div style="margin-top:8px">
+    <button id="btnClearTemp" class="btn" style="background:#e04">清除暫存資料</button>
+  </div>
+</div>
+
+<script>
+  window.addEventListener('app:navigate', function (e) {
+    if (e.detail.page !== 'settings') return;
+    const state = window.App.getState();
+    document.getElementById('curUser').textContent = state.currentUser?.name || '未登入';
+    document.getElementById('btnClearTemp').onclick = () => {
+      window.App.clearData();
+      alert('已清除暫存資料');
+    };
+  });
+</script>
