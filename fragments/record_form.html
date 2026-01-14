@@ -1,0 +1,40 @@
+<div class="card">
+  <h2>新增護理紀錄</h2>
+  <div class="small" id="targetPatient"></div>
+  <div class="form-row">
+    <input id="recTitle" placeholder="紀錄標題" />
+  </div>
+  <div style="margin-bottom:8px">
+    <textarea id="recContent" rows="6" placeholder="紀錄內容"></textarea>
+  </div>
+  <div>
+    <button id="btnSaveRec" class="btn">儲存紀錄</button>
+    <button id="btnCancel" class="btn" style="background:#888;margin-left:8px">取消</button>
+  </div>
+</div>
+
+<script>
+  window.addEventListener('app:navigate', function (e) {
+    if (e.detail.page !== 'record_form') return;
+    const params = e.detail.params || {};
+    const pid = params.patientId;
+    const state = window.App.getState();
+    const patient = state.patients.find(p => p.id === pid);
+    document.getElementById('targetPatient').textContent = patient ? `為：${patient.name}（床號 ${patient.bed}）` : '未指定病患';
+
+    document.getElementById('btnSaveRec').onclick = () => {
+      const title = document.getElementById('recTitle').value.trim() || '未命名紀錄';
+      const content = document.getElementById('recContent').value.trim() || '';
+      const list = state.records[pid] || [];
+      const id = (list.slice(-1)[0]?.id || 0) + 1;
+      const rec = { id, title, content, createdAt: Date.now() };
+      state.records[pid] = [...list, rec];
+      // 儲存後直接導向預覽並傳參
+      window.App.navigate('record_preview', { patientId: pid, recordId: id });
+    };
+
+    document.getElementById('btnCancel').onclick = () => {
+      window.App.navigate('patients');
+    };
+  });
+</script>
