@@ -17,7 +17,6 @@
       const state = window.App.getState();
       const id = (state.patients.slice(-1)[0]?.id || 0) + 1;
       state.patients.push({ id, name, bed });
-      // 新增後導回病患列表
       window.App.navigate('patients');
     };
   });
