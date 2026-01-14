@@ -29,7 +29,6 @@
       const id = (list.slice(-1)[0]?.id || 0) + 1;
       const rec = { id, title, content, createdAt: Date.now() };
       state.records[pid] = [...list, rec];
-      // 儲存後直接導向預覽並傳參
       window.App.navigate('record_preview', { patientId: pid, recordId: id });
     };
 
