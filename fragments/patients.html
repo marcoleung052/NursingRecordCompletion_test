@@ -21,7 +21,6 @@
       ul.appendChild(li);
     });
 
-    // 綁定按鈕
     ul.querySelectorAll('[data-id]').forEach(b => {
       b.addEventListener('click', () => {
         const id = b.getAttribute('data-id');
@@ -39,7 +38,6 @@
   window.addEventListener('app:navigate', function (e) {
     if (e.detail.page !== 'patients') return;
     renderPatients();
-    // 範例按鈕
     document.getElementById('btnAddRecord').onclick = () => {
       const first = window.App.getState().patients[0];
       if (first) window.App.navigate('record_form', { patientId: first.id });
