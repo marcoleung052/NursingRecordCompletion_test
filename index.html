@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>護理紀錄系統（SPA Fragment）</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">護理紀錄系統</div>
+    <nav class="nav">
+      <button data-link="login">登入</button>
+      <button data-link="patients">病患</button>
+      <button data-link="add_patient">新增病患</button>
+      <button data-link="settings">設定</button>
+    </nav>
+  </header>
+
+  <main id="app" class="container">
+    <!-- fragments will be injected here -->
+  </main>
+
+  <footer class="footer">© Nursing Record Demo</footer>
+
+  <script src="app.js"></script>
+  <script>
+    // 初始導向
+    document.addEventListener('DOMContentLoaded', function () {
+      // 綁定 header 導航按鈕
+      document.querySelectorAll('[data-link]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const page = btn.getAttribute('data-link');
+          window.App.navigate(page);
+        });
+      });
+
+      // 初始載入（若有 history state，使用它）
+      const path = location.pathname.split('/').pop() || '';
+      const initial = path && path !== 'index.html' ? path.replace('.html','') : 'login';
+      window.App.navigate(initial, {}, { replace: true });
+    });
+  </script>
+</body>
+</html>
