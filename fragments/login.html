@@ -17,18 +17,14 @@
 </div>
 
 <script>
-  // 維持與原 demo1.html 相同的行為：登入後導向 patients
   window.addEventListener('app:navigate', function (e) {
     if (e.detail.page !== 'login') return;
     const btn = document.getElementById('btnLogin');
     btn.onclick = () => {
       const id = document.getElementById('empId').value.trim() || '訪客';
-      // 將使用者名稱存入全域 state（與原行為一致）
       window.App.getState().currentUser = { id };
       window.App.navigate('patients', { welcome: id });
     };
-
-    // 支援 Enter 鍵送出
     ['empId','pwd'].forEach(id => {
       const el = document.getElementById(id);
       el.addEventListener('keydown', (ev) => {
