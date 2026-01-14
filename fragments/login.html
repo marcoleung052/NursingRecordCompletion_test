@@ -1,22 +1,39 @@
-<div class="card">
-  <h2>登入</h2>
-  <div class="form-row">
-    <input id="username" placeholder="使用者名稱" />
-    <button id="btnLogin" class="btn">登入</button>
+<div class="login-card" role="main" aria-labelledby="loginTitle">
+  <h1 id="loginTitle">系統登入</h1>
+
+  <div class="field">
+    <label for="empId">員工編號/ID</label>
+    <input id="empId" type="text" placeholder="輸入員工編號" value="N001" />
   </div>
-  <p class="small">示範：輸入任意名稱即可登入（狀態存在於 SPA）</p>
+
+  <div class="field">
+    <label for="pwd">密碼</label>
+    <input id="pwd" type="password" placeholder="輸入密碼" value="1234" />
+  </div>
+
+  <button id="btnLogin" class="btn-primary">登入系統</button>
+
+  <div class="demo-note small">示範帳號：<strong>N001</strong> / <strong>1234</strong></div>
 </div>
 
 <script>
-  // 當 fragment 被注入後，會觸發 app:navigate
+  // 維持與原 demo1.html 相同的行為：登入後導向 patients
   window.addEventListener('app:navigate', function (e) {
     if (e.detail.page !== 'login') return;
     const btn = document.getElementById('btnLogin');
     btn.onclick = () => {
-      const name = document.getElementById('username').value || '訪客';
-      window.App.getState().currentUser = { name };
-      // 登入後導向病患列表
-      window.App.navigate('patients', { welcome: name });
+      const id = document.getElementById('empId').value.trim() || '訪客';
+      // 將使用者名稱存入全域 state（與原行為一致）
+      window.App.getState().currentUser = { id };
+      window.App.navigate('patients', { welcome: id });
     };
+
+    // 支援 Enter 鍵送出
+    ['empId','pwd'].forEach(id => {
+      const el = document.getElementById(id);
+      el.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter') btn.click();
+      });
+    });
   });
 </script>
