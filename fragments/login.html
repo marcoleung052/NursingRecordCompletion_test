@@ -1,0 +1,22 @@
+<div class="card">
+  <h2>登入</h2>
+  <div class="form-row">
+    <input id="username" placeholder="使用者名稱" />
+    <button id="btnLogin" class="btn">登入</button>
+  </div>
+  <p class="small">示範：輸入任意名稱即可登入（狀態存在於 SPA）</p>
+</div>
+
+<script>
+  // 當 fragment 被注入後，會觸發 app:navigate
+  window.addEventListener('app:navigate', function (e) {
+    if (e.detail.page !== 'login') return;
+    const btn = document.getElementById('btnLogin');
+    btn.onclick = () => {
+      const name = document.getElementById('username').value || '訪客';
+      window.App.getState().currentUser = { name };
+      // 登入後導向病患列表
+      window.App.navigate('patients', { welcome: name });
+    };
+  });
+</script>
