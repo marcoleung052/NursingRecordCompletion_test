@@ -1,0 +1,48 @@
+<div class="card">
+  <h2>病患列表</h2>
+  <ul id="patientList" class="list"></ul>
+  <div style="margin-top:12px">
+    <button id="btnAddRecord" class="btn">為第一位病患新增紀錄（示範傳參）</button>
+  </div>
+</div>
+
+<script>
+  function renderPatients() {
+    const ul = document.getElementById('patientList');
+    ul.innerHTML = '';
+    const state = window.App.getState();
+    (state.patients || []).forEach(p => {
+      const li = document.createElement('li');
+      li.innerHTML = `<div><strong>${p.name}</strong><div class="small">床號 ${p.bed}</div></div>
+                      <div>
+                        <button class="btn view" data-id="${p.id}">查看</button>
+                        <button class="btn" data-add="${p.id}">新增紀錄</button>
+                      </div>`;
+      ul.appendChild(li);
+    });
+
+    // 綁定按鈕
+    ul.querySelectorAll('[data-id]').forEach(b => {
+      b.addEventListener('click', () => {
+        const id = b.getAttribute('data-id');
+        window.App.navigate('record_preview', { patientId: Number(id) });
+      });
+    });
+    ul.querySelectorAll('[data-add]').forEach(b => {
+      b.addEventListener('click', () => {
+        const id = b.getAttribute('data-add');
+        window.App.navigate('record_form', { patientId: Number(id) });
+      });
+    });
+  }
+
+  window.addEventListener('app:navigate', function (e) {
+    if (e.detail.page !== 'patients') return;
+    renderPatients();
+    // 範例按鈕
+    document.getElementById('btnAddRecord').onclick = () => {
+      const first = window.App.getState().patients[0];
+      if (first) window.App.navigate('record_form', { patientId: first.id });
+    };
+  });
+</script>
