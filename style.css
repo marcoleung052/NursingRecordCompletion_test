@@ -1,10 +1,95 @@
+/* 全域樣式（包含登入畫面專屬樣式） */
 :root{
-  --bg:#f7f8fb; --card:#fff; --accent:#2b7cff; --muted:#666;
+  --accent:#6b46ff;
+  --accent-2:#9b6bff;
+  --card:#ffffff;
+  --muted:#9aa3c0;
+  --text:#0f1724;
 }
 *{box-sizing:border-box}
-body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans TC",sans-serif;background:var(--bg);color:#222}
-.topbar{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--card);box-shadow:0 1px 4px rgba(0,0,0,.06)}
-.brand{font-weight:700}
-.nav button{margin-left:8px;padding:6px 10px;border:0;background:transparent;cursor:pointer;color:var(--accent)}
-.container
+html,body{height:100%}
+body{
+  margin:0;
+  font-family: "Noto Sans TC", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  color:var(--text);
+  background:transparent;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
 
+/* 紫色漸層背景 */
+.bg-gradient{
+  position:fixed; inset:0;
+  background: linear-gradient(135deg, #6b46ff 0%, #8b5cf6 40%, #a78bfa 100%);
+  z-index:-1;
+}
+
+/* header/footer 隱藏於登入畫面上方，但保留在 DOM */
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;background:transparent;color:#fff}
+.brand{font-weight:700;color:rgba(255,255,255,0.95)}
+.nav button{margin-left:8px;padding:6px 10px;border:0;background:transparent;cursor:pointer;color:rgba(255,255,255,0.9)}
+
+/* 中央容器：讓登入卡片置中 */
+.container{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+}
+
+/* 登入卡片 */
+.login-card{
+  width:360px;
+  max-width:92%;
+  background:linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.96));
+  border-radius:12px;
+  box-shadow: 0 10px 30px rgba(2,6,23,0.35);
+  padding:28px;
+  text-align:center;
+}
+
+/* 標題 */
+.login-card h1{
+  margin:0 0 12px 0;
+  font-size:20px;
+  color:#1f2937;
+}
+
+/* 欄位 */
+.field{margin-bottom:12px;text-align:left}
+.field label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+.field input{
+  width:100%;
+  padding:10px 12px;
+  border-radius:8px;
+  border:1px solid #e6e9f2;
+  font-size:15px;
+  outline:none;
+  background:#fff;
+  color:var(--text);
+}
+.field input:focus{box-shadow:0 6px 18px rgba(99,102,241,0.12);border-color:rgba(99,102,241,0.6)}
+
+/* 登入按鈕 */
+.btn-primary{
+  width:100%;
+  padding:10px 12px;
+  border-radius:10px;
+  border:0;
+  color:#fff;
+  background: linear-gradient(90deg,var(--accent),var(--accent-2));
+  font-weight:600;
+  cursor:pointer;
+  margin-top:6px;
+  box-shadow:0 8px 20px rgba(99,102,241,0.18);
+}
+
+/* 示範帳號文字 */
+.demo-note{margin-top:12px;font-size:13px;color:rgba(15,23,36,0.6)}
+
+/* 小字 */
+.small{font-size:13px;color:var(--muted)}
+
+/* 讓其他 fragment 的 card 樣式仍可用 */
+.card{background:var(--card);padding:16px;border-radius:8px;box-shadow:0 1px 6px rgba(0,0,0,.06)}
