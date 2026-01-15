@@ -38,7 +38,10 @@ if (location.pathname.includes("patients.html")) {
         <td>${p.risk}</td>
         <td>${p.doctor}</td>
         <td>${p.admitDate}</td>
-        <td><a href="patient_detail.html?id=${p.id}">查看</a></td>
+        <td class="actions">
+          <a class="btn-small" href="patient_detail.html?id=${p.id}">查看</a>
+          <a class="btn-small-secondary" href="../records/add_record.html?id=${p.id}">編寫紀錄</a>
+        </td>
       </tr>
     `).join("");
 
