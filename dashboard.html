@@ -6,6 +6,12 @@
   <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body>
+  <script src="../assets/js/layout.js"></script>
+  <script>
+  const user = localStorage.getItem("username") || "張護理師";
+  renderHeader(user);
+  </script>
+
   <div class="container">
     <h2>主頁</h2>
     <div class="toolbar">
