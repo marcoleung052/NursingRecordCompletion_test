@@ -8,24 +8,33 @@
 <body>
   <script src="../assets/js/layout.js"></script>
   <script>
-  const user = localStorage.getItem("username") || "張護理師";
-  renderHeader(user);
+    const user = localStorage.getItem("username") || "張護理師";
+    renderHeader(user);
   </script>
 
   <div class="container">
     <h2>系統設定</h2>
+    <p>管理您的個人檔案和系統設定</p>
 
-    <div class="setting-item">
-      <label>系統主題
-        <select id="themeSelect">
-          <option value="light">亮色</option>
-          <option value="dark">暗色</option>
-        </select>
-      </label>
-    </div>
+    <form id="settingsForm">
+      <label>姓名<input id="name" required></label>
+      <label>員工編號<input id="staffId" required></label>
+      <label>電子郵件<input id="email" type="email"></label>
+      <label>聯絡電話<input id="phone" type="tel"></label>
+      <label>科別<input id="department"></label>
+      <label>職位<input id="position"></label>
 
-    <button class="btn" id="saveBtn">儲存設定</button>
-    <a class="btn-secondary" href="../dashboard.html">返回主頁</a>
+      <h3>密碼設定</h3>
+      <label>目前密碼<input id="currentPwd" type="password"></label>
+      <label>新密碼<input id="newPwd" type="password"></label>
+      <label>確認密碼<input id="confirmPwd" type="password"></label>
+
+      <div class="toolbar">
+        <button type="submit" class="btn">儲存更新</button>
+        <button type="button" class="btn-secondary" onclick="location.href='../dashboard.html'">取消</button>
+        <button type="button" class="btn-secondary" onclick="logout()">登出系統</button>
+      </div>
+    </form>
   </div>
 
 <script src="settings.js"></script>
