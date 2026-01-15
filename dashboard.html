@@ -8,19 +8,17 @@
 <body>
   <div class="container">
     <h2>主頁</h2>
-    <nav>
-      <a href="patients/patients.html">病患管理</a>
-      <a href="settings/settings.html">系統設定</a>
-      <a href="#" id="logoutBtn">登出</a>
-    </nav>
+    <div class="toolbar">
+      <a class="btn" href="patients/patients.html">病患管理</a>
+      <a class="btn" href="patients/add_patient.html">新增病患</a>
+    </div>
   </div>
 
 <script src="assets/js/auth.js"></script>
+<script src="assets/js/layout.js"></script>
 <script>
-document.getElementById('logoutBtn').onclick = () => {
-  localStorage.removeItem('auth');
-  window.location.href = "index.html";
-};
+const user = localStorage.getItem("username") || "張護理師";
+renderHeader(user);
 </script>
 </body>
 </html>
