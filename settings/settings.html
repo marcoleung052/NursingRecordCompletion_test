@@ -1,4 +1,18 @@
-<div class="container">
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="utf-8">
+  <title>系統設定</title>
+  <link rel="stylesheet" href="../assets/css/styles.css">
+</head>
+<body>
+  <script src="../assets/js/layout.js"></script>
+  <script>
+    const user = localStorage.getItem("username") || "張護理師";
+    renderHeader(user);
+  </script>
+
+  <div class="container">
   <h2>系統設定</h2>
   <p>管理您的個人檔案和系統設定</p>
 
@@ -70,3 +84,6 @@
 
   </form>
 </div>
+<script src="settings.js"></script>
+</body>
+</html>
