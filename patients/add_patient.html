@@ -13,69 +13,113 @@
   </script>
 
   <div class="container">
-    <a href="patients.html" class="btn-secondary">← 返回列表</a>
-    <h2>新增病患</h2>
+  <a href="patients.html" class="btn-secondary">← 返回列表</a>
+  <h2>新增病患</h2>
 
-    <form id="addForm">
+  <form id="addForm" class="form-grid">
+
+    <!-- 病人資料 -->
+    <div class="form-card">
+      <h3>病人資料</h3>
+
+      <div class="two-col">
+        <label>姓名 *
+          <input id="name" placeholder="請輸入姓名" required>
+        </label>
+
+        <label>出生日期 *
+          <input id="birth" type="date" required>
+        </label>
+      </div>
+
+      <div class="two-col">
+        <label>性別 *
+          <select id="gender" required>
+            <option value="男">男</option>
+            <option value="女">女</option>
+          </select>
+        </label>
+
+        <label>聯絡電話
+          <input id="phone" placeholder="請輸入聯絡電話">
+        </label>
+      </div>
+
+      <label>電郵
+        <input id="email" type="email" placeholder="請輸入電子郵件">
+      </label>
+    </div>
+
+    <!-- 緊急聯絡人 -->
+    <div class="form-card">
+      <h3>緊急聯絡人</h3>
+
+      <div class="two-col">
+        <label>姓名
+          <input id="emgName" placeholder="請輸入姓名">
+        </label>
+
+        <label>聯絡電話
+          <input id="emgPhone" placeholder="請輸入聯絡電話">
+        </label>
+      </div>
+
+      <label>關係
+        <input id="emgRelation" placeholder="例如：父親、母親、配偶">
+      </label>
+    </div>
+
+    <!-- 住院資訊 -->
+    <div class="form-card">
       <h3>住院資訊</h3>
 
-      <label>病患姓名 *
-        <input id="name" placeholder="請輸入姓名" required>
-      </label>
+      <div class="two-col">
+        <label>病房床號 *
+          <input id="room" placeholder="例：A101-2" required>
+        </label>
 
-      <label>病歷號 *
-        <input id="mrn" placeholder="例：P006" required>
-      </label>
-
-      <label>年齡 *
-        <input id="age" type="number" placeholder="請輸入年齡" required>
-      </label>
-
-      <label>性別 *
-        <select id="gender" required>
-          <option value="男">男</option>
-          <option value="女">女</option>
-        </select>
-      </label>
-
-      <label>病房床號 *
-        <input id="room" placeholder="例：A101-2" required>
-      </label>
-
-      <label>科別 *
-        <select id="department" required>
-          <option value="內科">內科</option>
-          <option value="外科">外科</option>
-          <option value="兒科">兒科</option>
-        </select>
-      </label>
-
-      <label>診斷 *
-        <input id="diagnosis" placeholder="請輸入主要診斷" required>
-      </label>
-
-      <label>風險等級 *
-        <select id="risk" required>
-          <option value="低風險">低風險</option>
-          <option value="中風險">中風險</option>
-          <option value="高風險">高風險</option>
-        </select>
-      </label>
-
-      <label>主治醫師
-        <input id="doctor" placeholder="請輸入醫師姓名">
-      </label>
-
-      <label>入院日期 *
-        <input id="admitDate" type="date" required>
-      </label>
-
-      <div class="toolbar">
-        <button type="submit" class="btn">✓ 儲存病患</button>
-        <button type="button" class="btn-secondary" onclick="location.href='patients.html'">取消</button>
+        <label>科別 *
+          <select id="department" required>
+            <option value="內科">內科</option>
+            <option value="外科">外科</option>
+            <option value="兒科">兒科</option>
+          </select>
+        </label>
       </div>
-    </form>
-  </div>
+
+      <div class="two-col">
+        <label>主治醫師
+          <input id="doctor" placeholder="請輸入醫師姓名">
+        </label>
+
+        <label>診斷 *
+          <input id="diagnosis" placeholder="請輸入主要診斷" required>
+        </label>
+      </div>
+
+      <div class="two-col">
+        <label>風險等級 *
+          <select id="risk" required>
+            <option value="低風險">低風險</option>
+            <option value="中風險">中風險</option>
+            <option value="高風險">高風險</option>
+          </select>
+        </label>
+
+        <label>入院日期 *
+          <input id="admitDate" type="date" required>
+        </label>
+      </div>
+    </div>
+
+    <!-- 按鈕 -->
+    <div class="form-actions">
+      <button type="submit" class="btn">✓ 儲存病患</button>
+      <button type="button" class="btn-secondary" onclick="location.href='patients.html'">取消</button>
+    </div>
+
+  </form>
+</div>
 
 <script src="patients.js"></script>
 </body>
