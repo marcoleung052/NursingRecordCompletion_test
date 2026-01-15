@@ -122,3 +122,54 @@ const newPatient = {
   document.getElementById("toRecords").href =
     `../records/record_list.html?id=${id}`;
 }
+const id = new URLSearchParams(location.search).get("id");
+
+// 取得病患資料
+fetch(`/patients/${id}`)
+  .then(res => res.json())
+  .then(p => {
+    document.getElementById("p_name").textContent = p.name;
+    document.getElementById("p_birth").textContent = p.birth;
+    document.getElementById("p_gender").textContent = p.gender;
+    document.getElementById("p_phone").textContent = p.phone;
+    document.getElementById("p_email").textContent = p.email;
+
+    document.getElementById("p_emg_name").textContent = p.emg_name;
+    document.getElementById("p_emg_phone").textContent = p.emg_phone;
+    document.getElementById("p_emg_relation").textContent = p.emg_relation;
+
+    document.getElementById("p_room").textContent = p.room;
+    document.getElementById("p_department").textContent = p.department;
+    document.getElementById("p_doctor").textContent = p.doctor;
+    document.getElementById("p_diagnosis").textContent = p.diagnosis;
+    document.getElementById("p_risk").textContent = p.risk;
+    document.getElementById("p_admit").textContent = p.admit_date;
+  });
+
+// 取得護理紀錄
+fetch(`/records/${id}`)
+  .then(res => res.json())
+  .then(records => {
+    const tbody = document.getElementById("recordBody");
+    tbody.innerHTML = "";
+
+    records.forEach(r => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${r.created_at}</td>
+        <td>${r.content}</td>
+        <td>${r.nurse_id}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  });
+
+// 修改病人資料按鈕
+document.getElementById("editPatientBtn").onclick = () => {
+  location.href = `edit_patient.html?id=${id}`;
+};
+
+// 新增紀錄按鈕
+document.getElementById("addRecordBtn").onclick = () => {
+  location.href = `add_record.html?id=${id}`;
+};
