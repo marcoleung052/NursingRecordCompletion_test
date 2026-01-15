@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="utf-8">
+  <title>病患資料</title>
+  <link rel="stylesheet" href="../assets/css/styles.css">
+</head>
+<body>
+  <script src="../assets/js/layout.js"></script>
+  <script>
+  const user = localStorage.getItem("username") || "張護理師";
+  renderHeader(user);
+  </script>
+
+  <div class="container">
+
+  <!-- 病患資料區 -->
+  <h2>病患資料</h2>
+
+  <div class="form-card">
+    <div class="two-col">
+      <p><strong>姓名：</strong> <span id="p_name"></span></p>
+      <p><strong>出生日期：</strong> <span id="p_birth"></span></p>
+    </div>
+
+    <div class="two-col">
+      <p><strong>性別：</strong> <span id="p_gender"></span></p>
+      <p><strong>聯絡電話：</strong> <span id="p_phone"></span></p>
+    </div>
+
+    <p><strong>電郵：</strong> <span id="p_email"></span></p>
+
+    <h3>緊急聯絡人</h3>
+    <div class="two-col">
+      <p><strong>姓名：</strong> <span id="p_emg_name"></span></p>
+      <p><strong>聯絡電話：</strong> <span id="p_emg_phone"></span></p>
+    </div>
+    <p><strong>關係：</strong> <span id="p_emg_relation"></span></p>
+
+    <h3>住院資訊</h3>
+    <div class="two-col">
+      <p><strong>病房床號：</strong> <span id="p_room"></span></p>
+      <p><strong>科別：</strong> <span id="p_department"></span></p>
+    </div>
+
+    <div class="two-col">
+      <p><strong>主治醫師：</strong> <span id="p_doctor"></span></p>
+      <p><strong>診斷：</strong> <span id="p_diagnosis"></span></p>
+    </div>
+
+    <div class="two-col">
+      <p><strong>風險等級：</strong> <span id="p_risk"></span></p>
+      <p><strong>入院日期：</strong> <span id="p_admit"></span></p>
+    </div>
+
+    <div class="form-actions">
+      <a class="btn" id="editPatientBtn">修改病人資料</a>
+    </div>
+  </div>
+
+
+  <!-- 護理紀錄列表 -->
+  <h2 style="margin-top:40px;">護理紀錄列表</h2>
+
+  <div class="form-actions">
+    <a class="btn" id="addRecordBtn">新增護理紀錄</a>
+  </div>
+
+  <table class="table" id="recordTable">
+    <thead>
+      <tr>
+        <th>日期</th>
+        <th>內容</th>
+        <th>紀錄者</th>
+      </tr>
+    </thead>
+    <tbody id="recordBody">
+      <!-- JS 動態載入 -->
+    </tbody>
+  </table>
+
+</div>
+
+<script src="patients.js"></script>
+</body>
+</html>
