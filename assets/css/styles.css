@@ -232,3 +232,40 @@ textarea {
   gap: 12px;
   margin-top: 12px;
 }
+/* ===== 雙欄排版 ===== */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* ===== 表單總排版 ===== */
+.form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ===== 卡片式分區 ===== */
+.form-card {
+  background: #ffffff;
+  padding: 24px;
+  border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+  border: 1px solid #e2e8f0;
+}
+
+.form-card h3 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  color: #1e3a8a;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+/* ===== 按鈕區 ===== */
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
