@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="utf-8">
+  <title>新增病患</title>
+  <link rel="stylesheet" href="../assets/css/styles.css">
+</head>
+<body>
+  <div class="container">
+    <h2>新增病患</h2>
+
+    <form id="addForm">
+      <label>姓名<input id="name" required></label>
+      <label>性別
+        <select id="gender">
+          <option value="男">男</option>
+          <option value="女">女</option>
+        </select>
+      </label>
+      <label>生日<input type="date" id="birthday" required></label>
+      <label>病歷號<input id="mrn" required></label>
+
+      <button type="submit" class="btn">新增</button>
+      <a href="patients.html" class="btn-secondary">返回</a>
+    </form>
+  </div>
+
+<script src="patients.js"></script>
+</body>
+</html>
