@@ -1,42 +1,72 @@
-<!DOCTYPE html>
-<html lang="zh-HK">
-<head>
-  <meta charset="utf-8">
-  <title>系統設定</title>
-  <link rel="stylesheet" href="../assets/css/styles.css">
-</head>
-<body>
-  <script src="../assets/js/layout.js"></script>
-  <script>
-    const user = localStorage.getItem("username") || "張護理師";
-    renderHeader(user);
-  </script>
+<div class="container">
+  <h2>系統設定</h2>
+  <p>管理您的個人檔案和系統設定</p>
 
-  <div class="container">
-    <h2>系統設定</h2>
-    <p>管理您的個人檔案和系統設定</p>
+  <form id="settingsForm" class="form-grid">
 
-    <form id="settingsForm">
-      <label>姓名<input id="name" required></label>
-      <label>員工編號<input id="staffId" required></label>
-      <label>電子郵件<input id="email" type="email"></label>
-      <label>聯絡電話<input id="phone" type="tel"></label>
-      <label>科別<input id="department"></label>
-      <label>職位<input id="position"></label>
+    <!-- 個人資料 -->
+    <div class="form-card">
+      <h3>個人資料</h3>
 
-      <h3>密碼設定</h3>
-      <label>目前密碼<input id="currentPwd" type="password"></label>
-      <label>新密碼<input id="newPwd" type="password"></label>
-      <label>確認密碼<input id="confirmPwd" type="password"></label>
+      <div class="two-col">
+        <label>姓名
+          <input id="name">
+        </label>
 
-      <div class="toolbar">
-        <button type="submit" class="btn">儲存更新</button>
-        <button type="button" class="btn-secondary" onclick="location.href='../dashboard.html'">取消</button>
-        <button type="button" class="btn-secondary" onclick="logout()">登出系統</button>
+        <label>聯絡電話
+          <input id="phone" type="tel">
+        </label>
       </div>
-    </form>
-  </div>
 
-<script src="settings.js"></script>
-</body>
-</html>
+      <label>電子郵件
+        <input id="email" type="email">
+      </label>
+    </div>
+
+    <!-- 醫院資料 -->
+    <div class="form-card">
+      <h3>醫院資料</h3>
+
+      <div class="two-col">
+        <label>員工編號
+          <input id="staffId">
+        </label>
+
+        <label>科別
+          <input id="department">
+        </label>
+      </div>
+
+      <label>職位
+        <input id="position">
+      </label>
+    </div>
+
+    <!-- 系統資料 -->
+    <div class="form-card">
+      <h3>系統資料</h3>
+
+      <label>帳號
+        <input id="account" disabled style="background:#e2e8f0;">
+      </label>
+
+      <div class="two-col">
+        <label>新密碼
+          <input id="newPwd" type="password">
+        </label>
+
+        <label>確認新密碼
+          <input id="confirmPwd" type="password">
+        </label>
+      </div>
+    </div>
+
+    <!-- 按鈕 -->
+    <div class="form-actions">
+      <button type="submit" class="btn">儲存更新</button>
+      <button type="button" class="btn-secondary" onclick="location.href='../dashboard.html'">取消</button>
+      <button type="button" class="btn-secondary" onclick="logout()">登出系統</button>
+    </div>
+
+  </form>
+</div>
