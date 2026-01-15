@@ -13,7 +13,7 @@ function renderHeader(username = "未登入") {
   header.innerHTML = `
     <div class="header-bar">
       <div class="logo">
-        <a href="${homePath}" style="color:white;text-decoration:none;">🏥 護理紀錄系統</a>
+        <a href="${homePath}" style="color:white;text-decoration:none;">護理紀錄系統</a>
       </div>
       <div class="user-info">
         <span>${username}</span>
