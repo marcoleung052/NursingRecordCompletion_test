@@ -8,30 +8,41 @@
 <body>
   <script src="../assets/js/layout.js"></script>
   <script>
-  const user = localStorage.getItem("username") || "張護理師";
-  renderHeader(user);
+    const user = localStorage.getItem("username") || "張護理師";
+    renderHeader(user);
   </script>
 
   <div class="container">
-    <h2>病患列表</h2>
+    <h2>病患管理</h2>
 
     <div class="toolbar">
-      <input id="searchInput" placeholder="搜尋姓名或病歷號">
+      <input id="searchInput" placeholder="搜尋病患姓名或病歷號...">
+      <select id="deptFilter">
+        <option value="">所有科別</option>
+        <option value="內科">內科</option>
+        <option value="外科">外科</option>
+        <option value="兒科">兒科</option>
+      </select>
       <a class="btn" href="add_patient.html">新增病患</a>
     </div>
 
     <table class="table">
       <thead>
         <tr>
-          <th>姓名</th>
-          <th>性別</th>
-          <th>生日</th>
-          <th>病歷號</th>
+          <th>病患資訊</th>
+          <th>病房床號</th>
+          <th>科別</th>
+          <th>診斷</th>
+          <th>風險等級</th>
+          <th>主治醫師</th>
+          <th>入院日期</th>
           <th>操作</th>
         </tr>
       </thead>
       <tbody id="patientList"></tbody>
     </table>
+
+    <div id="pagination" style="margin-top:16px;color:#475569;font-size:14px;"></div>
   </div>
 
 <script src="patients.js"></script>
