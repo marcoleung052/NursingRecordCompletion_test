@@ -1,7 +1,140 @@
-body{font-family:Arial,Helvetica,sans-serif;background:#f4f6f8;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
-.login-card{background:#fff;padding:24px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.08);width:320px}
-.login-card h2{margin:0 0 12px}
-label{display:block;margin:8px 0}
-input{width:100%;padding:8px;border:1px solid #ddd;border-radius:4px}
-button{width:100%;padding:10px;margin-top:12px;background:#2563eb;color:#fff;border:none;border-radius:6px}
-.msg{color:#d00;margin-top:8px}
+/* ===== 全站基礎 ===== */
+body {
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: #f1f5f9;
+  margin: 0;
+  padding: 0;
+  color: #1e293b;
+}
+
+.container {
+  max-width: 900px;
+  margin: 40px auto;
+  background: #ffffff;
+  padding: 32px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+/* ===== 標題 ===== */
+h2 {
+  margin-top: 0;
+  font-size: 26px;
+  font-weight: 600;
+  color: #0f172a;
+  border-left: 6px solid #2563eb;
+  padding-left: 12px;
+}
+
+/* ===== 工具列 ===== */
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 16px 0 20px;
+}
+
+.toolbar input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  margin-right: 12px;
+}
+
+/* ===== 按鈕 ===== */
+.btn {
+  background: #2563eb;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 6px;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 15px;
+  transition: 0.2s;
+}
+
+.btn:hover {
+  background: #1d4ed8;
+}
+
+.btn-secondary {
+  background: #e2e8f0;
+  color: #334155;
+  padding: 10px 16px;
+  border-radius: 6px;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 15px;
+  transition: 0.2s;
+}
+
+.btn-secondary:hover {
+  background: #cbd5e1;
+}
+
+/* ===== 表單 ===== */
+form label {
+  display: block;
+  margin-bottom: 14px;
+  font-weight: 500;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 15px;
+  margin-top: 6px;
+  box-sizing: border-box;
+}
+
+textarea {
+  resize: vertical;
+}
+
+/* ===== 表格 ===== */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+
+.table th {
+  background: #2563eb;
+  color: white;
+  padding: 12px;
+  text-align: left;
+  font-weight: 500;
+}
+
+.table td {
+  padding: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.table tr:hover {
+  background: #f8fafc;
+}
+
+/* ===== 卡片（病患資料用） ===== */
+#detailBox p {
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 10px;
+}
+
+/* ===== 導航列（dashboard 用） ===== */
+nav a {
+  margin-right: 16px;
+  text-decoration: none;
+  color: #2563eb;
+  font-weight: 500;
+}
+
+nav a:hover {
+  text-decoration: underline;
+}
