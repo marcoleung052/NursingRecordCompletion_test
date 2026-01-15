@@ -1,1 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="utf-8">
+  <title>護理紀錄列表</title>
+  <link rel="stylesheet" href="../assets/css/styles.css">
+</head>
+<body>
+  <div class="container">
+    <h2>護理紀錄列表</h2>
 
+    <div id="patientInfo"></div>
+
+    <div class="toolbar">
+      <a class="btn" id="addRecordBtn">新增護理紀錄</a>
+      <a class="btn-secondary" href="../patients/patient_detail.html?id=" id="backBtn">返回病患資料</a>
+    </div>
+
+    <table class="table">
+      <thead>
+        <tr>
+          <th>日期時間</th>
+          <th>內容</th>
+        </tr>
+      </thead>
+      <tbody id="recordList"></tbody>
+    </table>
+  </div>
+
+<script src="records.js"></script>
+</body>
+</html>
