@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="utf-8">
+  <title>主頁</title>
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+  <div class="container">
+    <h2>主頁</h2>
+    <nav>
+      <a href="patients/patients.html">病患管理</a>
+      <a href="settings/settings.html">系統設定</a>
+      <a href="#" id="logoutBtn">登出</a>
+    </nav>
+  </div>
+
+<script src="assets/js/auth.js"></script>
+<script>
+document.getElementById('logoutBtn').onclick = () => {
+  localStorage.removeItem('auth');
+  window.location.href = "index.html";
+};
+</script>
+</body>
+</html>
