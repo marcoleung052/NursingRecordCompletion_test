@@ -97,7 +97,25 @@ if (location.pathname.includes("patient_detail.html")) {
     <p><strong>主治醫師：</strong>${patient.doctor}</p>
     <p><strong>入院日期：</strong>${patient.admitDate}</p>
   `;
+const newPatient = {
+  id: Date.now(),
+  name: document.getElementById("name").value,
+  birth: document.getElementById("birth").value,
+  gender: document.getElementById("gender").value,
+  phone: document.getElementById("phone").value,
+  email: document.getElementById("email").value,
 
+  emgName: document.getElementById("emgName").value,
+  emgPhone: document.getElementById("emgPhone").value,
+  emgRelation: document.getElementById("emgRelation").value,
+
+  room: document.getElementById("room").value,
+  department: document.getElementById("department").value,
+  doctor: document.getElementById("doctor").value,
+  diagnosis: document.getElementById("diagnosis").value,
+  risk: document.getElementById("risk").value,
+  admitDate: document.getElementById("admitDate").value
+};
   document.getElementById("toRecords").href =
     `../records/record_list.html?id=${id}`;
 }
