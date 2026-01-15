@@ -1,19 +1,55 @@
-/* ===== 全站基礎 ===== */
+/* ===== 全站背景 ===== */
 body {
-  font-family: "Segoe UI", Arial, sans-serif;
-  background: #f1f5f9;
+  font-family: "Segoe UI", "Noto Sans TC", sans-serif;
+  background: #f2f4f7; /* 淺灰 */
   margin: 0;
   padding: 0;
   color: #1e293b;
 }
 
+/* ===== Header ===== */
+header {
+  background: #1e3a8a; /* 深藍 */
+  color: white;
+  padding: 14px 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.header-bar {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo a {
+  font-size: 22px;
+  font-weight: 600;
+  color: white;
+  text-decoration: none;
+}
+
+.user-info {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.user-info a {
+  color: #dbeafe;
+  text-decoration: underline;
+  font-size: 14px;
+}
+
+/* ===== 主要內容容器 ===== */
 .container {
-  max-width: 900px;
+  max-width: 1100px;
   margin: 40px auto;
   background: #ffffff;
   padding: 32px;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  border-radius: 14px; /* 圓角 */
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08); /* 陰影 */
 }
 
 /* ===== 標題 ===== */
@@ -21,62 +57,88 @@ h2 {
   margin-top: 0;
   font-size: 26px;
   font-weight: 600;
-  color: #0f172a;
-  border-left: 6px solid #2563eb;
+  color: #1e3a8a;
+  border-left: 6px solid #1e3a8a;
   padding-left: 12px;
 }
 
 /* ===== 工具列 ===== */
 .toolbar {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 16px 0 20px;
+  gap: 12px;
+  margin: 20px 0;
 }
 
-.toolbar input {
-  flex: 1;
+.toolbar input,
+.toolbar select {
   padding: 10px 12px;
   border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  margin-right: 12px;
+  border-radius: 8px;
+  background: #f8fafc;
 }
 
 /* ===== 按鈕 ===== */
 .btn {
-  background: #2563eb;
+  background: #1e3a8a;
   color: white;
-  padding: 10px 16px;
-  border-radius: 6px;
+  padding: 10px 18px;
+  border-radius: 8px;
   text-decoration: none;
-  display: inline-block;
   font-size: 15px;
   transition: 0.2s;
 }
 
 .btn:hover {
-  background: #1d4ed8;
+  background: #1e40af;
 }
 
 .btn-secondary {
   background: #e2e8f0;
   color: #334155;
-  padding: 10px 16px;
-  border-radius: 6px;
+  padding: 10px 18px;
+  border-radius: 8px;
   text-decoration: none;
-  display: inline-block;
   font-size: 15px;
-  transition: 0.2s;
 }
 
 .btn-secondary:hover {
   background: #cbd5e1;
 }
 
+/* ===== 表格 ===== */
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 6px; /* 卡片式列 */
+}
+
+.table thead th {
+  background: #1e3a8a;
+  color: white;
+  padding: 12px;
+  text-align: left;
+  font-weight: 500;
+}
+
+.table tbody tr {
+  background: white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  border-radius: 8px;
+}
+
+.table td {
+  padding: 14px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.table tr:hover {
+  background: #f8fafc;
+}
+
 /* ===== 表單 ===== */
 form label {
   display: block;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
   font-weight: 500;
 }
 
@@ -84,90 +146,21 @@ input, select, textarea {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid #cbd5e1;
-  border-radius: 6px;
+  border-radius: 8px;
+  background: #f8fafc;
   font-size: 15px;
   margin-top: 6px;
-  box-sizing: border-box;
 }
 
 textarea {
   resize: vertical;
 }
 
-/* ===== 表格 ===== */
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 12px;
-}
-
-.table th {
-  background: #2563eb;
-  color: white;
-  padding: 12px;
-  text-align: left;
-  font-weight: 500;
-}
-
-.table td {
-  padding: 12px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.table tr:hover {
-  background: #f8fafc;
-}
-
-/* ===== 卡片（病患資料用） ===== */
+/* ===== 詳細資料卡片 ===== */
 #detailBox p {
   background: #f8fafc;
-  padding: 12px;
-  border-radius: 6px;
+  padding: 14px;
+  border-radius: 8px;
   border: 1px solid #e2e8f0;
-  margin-bottom: 10px;
-}
-
-/* ===== 導航列（dashboard 用） ===== */
-nav a {
-  margin-right: 16px;
-  text-decoration: none;
-  color: #2563eb;
-  font-weight: 500;
-}
-header {
-  background: #2563eb;
-  color: white;
-  padding: 12px 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.header-bar {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-.logo {
-  font-size: 20px;
-  font-weight: bold;
-}
-
-.user-info {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.user-info a {
-  color: #fff;
-  text-decoration: underline;
-  font-size: 14px;
-}
-
-nav a:hover {
-  text-decoration: underline;
+  margin-bottom: 12px;
 }
