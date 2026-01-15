@@ -273,3 +273,35 @@ textarea {
     font-size: 18px;
   }
 }
+/* ===== 小型按鈕（操作欄用） ===== */
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-small {
+  background: #1e3a8a;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  text-decoration: none;
+  transition: 0.2s;
+}
+
+.btn-small:hover {
+  background: #1e40af;
+}
+
+.btn-small-secondary {
+  background: #e2e8f0;
+  color: #334155;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.btn-small-secondary:hover {
+  background: #cbd5e1;
+}
