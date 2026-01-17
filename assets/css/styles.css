@@ -344,3 +344,10 @@ textarea {
   font-size: 15px;
   line-height: 1.4;
 }
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 24px;
+}
