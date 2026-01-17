@@ -305,3 +305,38 @@ textarea {
 .btn-small-secondary:hover {
   background: #cbd5e1;
 }
+/* ===== 工具列精準排版 ===== */
+.toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 20px 0;
+}
+
+.search-input {
+  flex: 2; /* 佔 50% */
+  min-width: 0;
+  height: auto;
+}
+
+.dept-select {
+  flex: 1; /* 佔 25% */
+  min-width: 0;
+  height: auto;
+}
+
+.add-btn {
+  flex: 1; /* 佔 25% */
+  text-align: center;
+  height: auto;
+  white-space: nowrap;
+}
+
+/* 所有欄位高度只需容納文字 */
+.search-input,
+.dept-select,
+.add-btn {
+  padding: 8px 12px;
+  font-size: 15px;
+  line-height: 1.4;
+}
