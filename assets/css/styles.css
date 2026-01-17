@@ -316,13 +316,13 @@ textarea {
 .search-input {
   flex: 2; /* 佔 50% */
   min-width: 0;
-  height: auto;
+  height: 12px;
 }
 
 .dept-select {
   flex: 1; /* 佔 25% */
   min-width: 0;
-  height: auto;
+  height: 12px;
 }
 
 .add-btn {
@@ -332,7 +332,7 @@ textarea {
   text-decoration: none;
   flex: 1; /* 佔 25% */
   text-align: center;
-  height: auto;
+  height: 12px;
   white-space: nowrap;
 }
 
