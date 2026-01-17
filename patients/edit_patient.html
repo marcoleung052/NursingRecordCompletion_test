@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="utf-8">
+  <title>修改病人資料</title>
+  <link rel="stylesheet" href="../assets/css/styles.css">
+</head>
+<body>
+  <script src="../assets/js/layout.js"></script>
+  <script>
+    const user = localStorage.getItem("username") || "張護理師";
+    renderHeader(user);
+  </script>
+
+  <div class="container">
+  <a href="patient_overview.html?id=" id="backBtn" class="btn-secondary">← 返回病患資料</a>
+  <h2>修改病人資料</h2>
+
+  <form id="editForm" class="form-grid">
+
+    <!-- 病人資料 -->
+    <div class="form-card">
+      <h3>病人資料</h3>
+
+      <div class="two-col">
+        <label>姓名 *
+          <input id="name" required>
+        </label>
+
+        <label>出生日期 *
+          <input id="birth" type="date" required>
+        </label>
+      </div>
+
+      <div class="two-col">
+        <label>性別 *
+          <select id="gender" required>
+            <option value="男">男</option>
+            <option value="女">女</option>
+          </select>
+        </label>
+
+        <label>聯絡電話
+          <input id="phone">
+        </label>
+      </div>
+
+      <label>電郵
+        <input id="email" type="email">
+      </label>
+    </div>
+
+    <!-- 緊急聯絡人 -->
+    <div class="form-card">
+      <h3>緊急聯絡人</h3>
+
+      <div class="two-col">
+        <label>姓名
+          <input id="emg_name">
+        </label>
+
+        <label>聯絡電話
+          <input id="emg_phone">
+        </label>
+      </div>
+
+      <label>關係
+        <input id="emg_relation">
+      </label>
+    </div>
+
+    <!-- 住院資訊 -->
+    <div class="form-card">
+      <h3>住院資訊</h3>
+
+      <div class="two-col">
+        <label>病房床號 *
+          <input id="room" required>
+        </label>
+
+        <label>科別 *
+          <input id="department" required>
+        </label>
+      </div>
+
+      <div class="two-col">
+        <label>主治醫師
+          <input id="doctor">
+        </label>
+
+        <label>診斷 *
+          <input id="diagnosis" required>
+        </label>
+      </div>
+
+      <div class="two-col">
+        <label>風險等級 *
+          <select id="risk" required>
+            <option value="低風險">低風險</option>
+            <option value="中風險">中風險</option>
+            <option value="高風險">高風險</option>
+          </select>
+        </label>
+
+        <label>入院日期 *
+          <input id="admit_date" type="date" required>
+        </label>
+      </div>
+    </div>
+
+    <!-- 按鈕 -->
+    <div class="form-actions">
+      <button type="submit" class="btn">儲存變更</button>
+      <button type="button" class="btn-secondary" id="cancelBtn">取消</button>
+      <button type="button" class="btn-secondary" id="deleteBtn" style="background:#dc2626;color:white;">刪除病患</button>
+    </div>
+
+  </form>
+</div>
+
+<script src="patients.js"></script>
+</body>
+</html>
