@@ -326,6 +326,10 @@ textarea {
 }
 
 .add-btn {
+  background: #e2e8f0;
+  color: #334155;
+  border-radius: 8px;
+  text-decoration: none;
   flex: 1; /* 佔 25% */
   text-align: center;
   height: auto;
