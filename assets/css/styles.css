@@ -67,26 +67,37 @@ h2 {
 .toolbar {
   display: flex;
   gap: 12px;
+  align-items: center;
   margin: 20px 0;
 }
 
-.toolbar input,
-.toolbar select {
-  padding: 10px 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  background: #f8fafc;
+.search-input {
+  flex: 2; /* 佔 50% */
+  min-width: 0;
+  height: auto;
+}
+
+.dept-select {
+  flex: 1; /* 佔 25% */
+  min-width: 0;
+  height: auto;
 }
 
 /* ===== 按鈕 ===== */
-.btn {
-  background: #1e3a8a;
-  color: white;
-  padding: 10px 18px;
-  border-radius: 8px;
-  text-decoration: none;
+.add-btn {
+  flex: 1; /* 佔 25% */
+  text-align: center;
+  height: auto;
+  white-space: nowrap;
+}
+
+/* 所有欄位高度只需容納文字 */
+.search-input,
+.dept-select,
+.add-btn {
+  padding: 8px 12px;
   font-size: 15px;
-  transition: 0.2s;
+  line-height: 1.4;
 }
 
 .btn:hover {
@@ -304,39 +315,4 @@ textarea {
 
 .btn-small-secondary:hover {
   background: #cbd5e1;
-}
-/* ===== 工具列精準排版 ===== */
-.toolbar {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  margin: 20px 0;
-}
-
-.search-input {
-  flex: 2; /* 佔 50% */
-  min-width: 0;
-  height: auto;
-}
-
-.dept-select {
-  flex: 1; /* 佔 25% */
-  min-width: 0;
-  height: auto;
-}
-
-.add-btn {
-  flex: 1; /* 佔 25% */
-  text-align: center;
-  height: auto;
-  white-space: nowrap;
-}
-
-/* 所有欄位高度只需容納文字 */
-.search-input,
-.dept-select,
-.add-btn {
-  padding: 8px 12px;
-  font-size: 15px;
-  line-height: 1.4;
 }
