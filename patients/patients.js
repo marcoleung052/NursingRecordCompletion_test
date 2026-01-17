@@ -1,12 +1,5 @@
-// 取得病患資料
-function getPatients() {
-  return JSON.parse(localStorage.getItem('patients') || '[]');
-}
-
-// 儲存病患資料
-function savePatients(list) {
-  localStorage.setItem('patients', JSON.stringify(list));
-}
+// patients/patients.js
+import { apiFetch } from "../js/api.js";
 
 // ------------------ 病患列表頁 ------------------
 if (location.pathname.includes("patients.html")) {
@@ -15,52 +8,70 @@ if (location.pathname.includes("patients.html")) {
   const tbody = document.getElementById("patientList");
   const pagination = document.getElementById("pagination");
 
-  function renderList() {
-    const keyword = searchInput.value.trim();
-    const dept = deptFilter.value;
-    const all = getPatients().filter(p =>
-      (p.name.includes(keyword) || p.mrn.includes(keyword)) &&
-      (dept === "" || p.department === dept)
-    );
+  let currentPage = 1;
+  const pageSize = 10;
 
-    const pageSize = 10;
-    const page = 1;
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    const list = all.slice(start, end);
+  async function fetchPatients({ q = "", department = "", page = 1, page_size = pageSize } = {}) {
+    const params = new URLSearchParams();
+    if (q) params.append("q", q);
+    if (department) params.append("department", department);
+    params.append("page", page);
+    params.append("page_size", page_size);
 
-    tbody.innerHTML = list.map(p => `
-      <tr>
-        <td>${p.name}<br>${p.mrn}・${p.age}歲・${p.gender}</td>
-        <td>${p.room}</td>
-        <td>${p.department}</td>
-        <td>${p.diagnosis}</td>
-        <td>${p.risk}</td>
-        <td>${p.doctor}</td>
-        <td>${p.admitDate}</td>
-        <td class="actions">
-          <a class="btn-small" href="patient_overview.html?id=${p.id}">查看</a>
-          <a class="btn-small-secondary" href="../add_record.html?id=${p.id}">編寫紀錄</a>
-        </td>
-      </tr>
-    `).join("");
-
-    pagination.textContent = `顯示 ${start + 1} 到 ${Math.min(end, all.length)} 筆，共 ${all.length} 筆病患資料`;
+    return apiFetch(`/patients?${params.toString()}`);
   }
 
-  searchInput.oninput = renderList;
-  deptFilter.onchange = renderList;
+  async function renderList() {
+    try {
+      const keyword = searchInput.value.trim();
+      const dept = deptFilter.value;
+      const res = await fetchPatients({ q: keyword, department: dept, page: currentPage, page_size: pageSize });
+
+      // 假設後端回傳陣列；若後端回傳 {items, total}，請調整下面程式
+      const all = Array.isArray(res) ? res : (res.items || []);
+      const total = Array.isArray(res) ? all.length : (res.total || all.length);
+
+      const start = (currentPage - 1) * pageSize;
+      const end = start + pageSize;
+      const list = all.slice(start, end);
+
+      tbody.innerHTML = list.map(p => `
+        <tr>
+          <td>${p.name || ""}<br>${p.mrn || ""}・${p.age || ""}歲・${p.gender || ""}</td>
+          <td>${p.room || ""}</td>
+          <td>${p.department || ""}</td>
+          <td>${p.diagnosis || ""}</td>
+          <td>${p.risk || ""}</td>
+          <td>${p.doctor || ""}</td>
+          <td>${p.admit_date || p.admitDate || ""}</td>
+          <td class="actions">
+            <a class="btn-small" href="patient_overview.html?id=${p.id}">查看</a>
+            <a class="btn-small-secondary" href="../records/add_record.html?id=${p.id}">編寫紀錄</a>
+          </td>
+        </tr>
+      `).join("");
+
+      pagination.textContent = `顯示 ${Math.min(start + 1, total)} 到 ${Math.min(end, total)} 筆，共 ${total} 筆病患資料`;
+    } catch (err) {
+      console.error("取得病患清單失敗", err);
+      tbody.innerHTML = `<tr><td colspan="8">取得病患清單失敗：${err.message}</td></tr>`;
+      pagination.textContent = "";
+    }
+  }
+
+  searchInput.oninput = () => { currentPage = 1; renderList(); };
+  deptFilter.onchange = () => { currentPage = 1; renderList(); };
+
+  // 初次載入
   renderList();
 }
 
 // ------------------ 新增病患頁 ------------------
 if (location.pathname.includes("add_patient.html")) {
-  document.getElementById("addForm").onsubmit = e => {
+  document.getElementById("addForm").onsubmit = async e => {
     e.preventDefault();
 
-    const list = getPatients();
-    const newPatient = {
-      id: Date.now(),
+    const payload = {
       name: document.getElementById("name").value,
       mrn: document.getElementById("mrn").value,
       age: document.getElementById("age").value,
@@ -70,106 +81,89 @@ if (location.pathname.includes("add_patient.html")) {
       diagnosis: document.getElementById("diagnosis").value,
       risk: document.getElementById("risk").value,
       doctor: document.getElementById("doctor").value,
-      admitDate: document.getElementById("admitDate").value
+      admit_date: document.getElementById("admitDate").value
     };
 
-    list.push(newPatient);
-    savePatients(list);
-
-    alert("新增成功");
-    location.href = "patients.html";
+    try {
+      await apiFetch('/patients', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      alert("新增成功");
+      location.href = "patients.html";
+    } catch (err) {
+      console.error("新增病患失敗", err);
+      alert("新增失敗：" + err.message);
+    }
   };
 }
 
 // ------------------ 病患詳細頁 ------------------
-if (location.pathname.includes("patient_detail.html")) {
+if (location.pathname.includes("patient_detail.html") || location.pathname.includes("patient_overview.html")) {
   const params = new URLSearchParams(location.search);
-  const id = Number(params.get("id"));
-  const patient = getPatients().find(p => p.id === id);
+  const id = params.get("id");
 
-  const box = document.getElementById("detailBox");
-  box.innerHTML = `
-    <p><strong>姓名：</strong>${patient.name}</p>
-    <p><strong>病歷號：</strong>${patient.mrn}</p>
-    <p><strong>年齡：</strong>${patient.age} 歲</p>
-    <p><strong>性別：</strong>${patient.gender}</p>
-    <p><strong>病房床號：</strong>${patient.room}</p>
-    <p><strong>科別：</strong>${patient.department}</p>
-    <p><strong>診斷：</strong>${patient.diagnosis}</p>
-    <p><strong>風險等級：</strong>${patient.risk}</p>
-    <p><strong>主治醫師：</strong>${patient.doctor}</p>
-    <p><strong>入院日期：</strong>${patient.admitDate}</p>
-  `;
-const newPatient = {
-  id: Date.now(),
-  name: document.getElementById("name").value,
-  birth: document.getElementById("birth").value,
-  gender: document.getElementById("gender").value,
-  phone: document.getElementById("phone").value,
-  email: document.getElementById("email").value,
+  async function loadPatient() {
+    try {
+      const p = await apiFetch(`/patients/${id}`);
+      if (!p) {
+        document.getElementById("detailBox").innerHTML = "<p>找不到病患資料</p>";
+        return;
+      }
 
-  emgName: document.getElementById("emgName").value,
-  emgPhone: document.getElementById("emgPhone").value,
-  emgRelation: document.getElementById("emgRelation").value,
+      document.getElementById("p_name").textContent = p.name || "";
+      document.getElementById("p_birth").textContent = p.birth || "";
+      document.getElementById("p_gender").textContent = p.gender || "";
+      document.getElementById("p_phone").textContent = p.phone || "";
+      document.getElementById("p_email").textContent = p.email || "";
 
-  room: document.getElementById("room").value,
-  department: document.getElementById("department").value,
-  doctor: document.getElementById("doctor").value,
-  diagnosis: document.getElementById("diagnosis").value,
-  risk: document.getElementById("risk").value,
-  admitDate: document.getElementById("admitDate").value
-};
-  document.getElementById("toRecords").href =
-    `../records/record_list.html?id=${id}`;
+      document.getElementById("p_emg_name").textContent = p.emg_name || "";
+      document.getElementById("p_emg_phone").textContent = p.emg_phone || "";
+      document.getElementById("p_emg_relation").textContent = p.emg_relation || "";
+
+      document.getElementById("p_room").textContent = p.room || "";
+      document.getElementById("p_department").textContent = p.department || "";
+      document.getElementById("p_doctor").textContent = p.doctor || "";
+      document.getElementById("p_diagnosis").textContent = p.diagnosis || "";
+      document.getElementById("p_risk").textContent = p.risk || "";
+      document.getElementById("p_admit").textContent = p.admit_date || p.admitDate || "";
+    } catch (err) {
+      console.error("讀取病患失敗", err);
+      document.getElementById("detailBox").innerHTML = `<p>讀取病患失敗：${err.message}</p>`;
+    }
+  }
+
+  // 取得護理紀錄
+  async function loadRecords() {
+    try {
+      const records = await apiFetch(`/records/${id}`);
+      const tbody = document.getElementById("recordBody");
+      tbody.innerHTML = "";
+      (records || []).forEach(r => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${r.created_at || r.datetime || ""}</td>
+          <td>${r.content || ""}</td>
+          <td>${r.nurse_id || ""}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    } catch (err) {
+      console.error("讀取紀錄失敗", err);
+      const tbody = document.getElementById("recordBody");
+      tbody.innerHTML = `<tr><td colspan="3">讀取紀錄失敗：${err.message}</td></tr>`;
+    }
+  }
+
+  document.getElementById("editPatientBtn").onclick = () => {
+    location.href = `edit_patient.html?id=${id}`;
+  };
+
+  document.getElementById("addRecordBtn").onclick = () => {
+    location.href = `../records/add_record.html?id=${id}`;
+  };
+
+  // 初次載入
+  loadPatient();
+  loadRecords();
 }
-const id = new URLSearchParams(location.search).get("id");
-
-// 取得病患資料
-fetch(`/patients/${id}`)
-  .then(res => res.json())
-  .then(p => {
-    document.getElementById("p_name").textContent = p.name;
-    document.getElementById("p_birth").textContent = p.birth;
-    document.getElementById("p_gender").textContent = p.gender;
-    document.getElementById("p_phone").textContent = p.phone;
-    document.getElementById("p_email").textContent = p.email;
-
-    document.getElementById("p_emg_name").textContent = p.emg_name;
-    document.getElementById("p_emg_phone").textContent = p.emg_phone;
-    document.getElementById("p_emg_relation").textContent = p.emg_relation;
-
-    document.getElementById("p_room").textContent = p.room;
-    document.getElementById("p_department").textContent = p.department;
-    document.getElementById("p_doctor").textContent = p.doctor;
-    document.getElementById("p_diagnosis").textContent = p.diagnosis;
-    document.getElementById("p_risk").textContent = p.risk;
-    document.getElementById("p_admit").textContent = p.admit_date;
-  });
-
-// 取得護理紀錄
-fetch(`/records/${id}`)
-  .then(res => res.json())
-  .then(records => {
-    const tbody = document.getElementById("recordBody");
-    tbody.innerHTML = "";
-
-    records.forEach(r => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${r.created_at}</td>
-        <td>${r.content}</td>
-        <td>${r.nurse_id}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-  });
-
-// 修改病人資料按鈕
-document.getElementById("editPatientBtn").onclick = () => {
-  location.href = `edit_patient.html?id=${id}`;
-};
-
-// 新增紀錄按鈕
-document.getElementById("addRecordBtn").onclick = () => {
-  location.href = `add_record.html?id=${id}`;
-};
