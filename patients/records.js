@@ -1,11 +1,9 @@
-// 取得紀錄
-function getRecords() {
-  return JSON.parse(localStorage.getItem('records') || '{}');
-}
+// patients/records.js
+import { apiFetch } from "../js/api.js";
 
-// 儲存紀錄
-function saveRecords(data) {
-  localStorage.setItem('records', JSON.stringify(data));
+// 取得紀錄（若仍有 localStorage fallback，可保留）
+function localGetPatients() {
+  return JSON.parse(localStorage.getItem('patients') || '[]');
 }
 
 // ------------------ 護理紀錄列表頁 ------------------
@@ -13,30 +11,44 @@ if (location.pathname.includes("record_list.html")) {
   const params = new URLSearchParams(location.search);
   const patientId = params.get("id");
 
-  const patient = JSON.parse(localStorage.getItem("patients"))
-    .find(p => p.id == patientId);
+  async function loadPatientInfo() {
+    try {
+      const patient = await apiFetch(`/patients/${patientId}`);
+      document.getElementById("patientInfo").innerHTML = `
+        <p><strong>姓名：</strong>${patient.name || ""}</p>
+        <p><strong>病歷號：</strong>${patient.mrn || ""}</p>
+      `;
+    } catch (err) {
+      // fallback to localStorage if backend fails
+      const patient = localGetPatients().find(p => p.id == patientId) || {};
+      document.getElementById("patientInfo").innerHTML = `
+        <p><strong>姓名：</strong>${patient.name || "—"}</p>
+        <p><strong>病歷號：</strong>${patient.mrn || "—"}</p>
+      `;
+    }
+  }
 
-  document.getElementById("patientInfo").innerHTML = `
-    <p><strong>姓名：</strong>${patient.name}</p>
-    <p><strong>病歷號：</strong>${patient.mrn}</p>
-  `;
+  async function loadRecords() {
+    try {
+      const records = await apiFetch(`/records/${patientId}`);
+      document.getElementById("recordList").innerHTML =
+        (records || []).map(r => `
+          <tr>
+            <td>${r.created_at || r.datetime || ""}</td>
+            <td>${r.content || ""}</td>
+          </tr>
+        `).join("");
+    } catch (err) {
+      console.error("讀取紀錄失敗", err);
+      document.getElementById("recordList").innerHTML = `<tr><td colspan="2">讀取紀錄失敗：${err.message}</td></tr>`;
+    }
+  }
 
-  document.getElementById("addRecordBtn").href =
-    `add_record.html?id=${patientId}`;
+  document.getElementById("addRecordBtn").href = `add_record.html?id=${patientId}`;
+  document.getElementById("backBtn").href = `../patients/patient_detail.html?id=${patientId}`;
 
-  document.getElementById("backBtn").href =
-    `../patients/patient_detail.html?id=${patientId}`;
-
-  const allRecords = getRecords();
-  const list = allRecords[patientId] || [];
-
-  document.getElementById("recordList").innerHTML =
-    list.map(r => `
-      <tr>
-        <td>${r.datetime}</td>
-        <td>${r.content}</td>
-      </tr>
-    `).join("");
+  loadPatientInfo();
+  loadRecords();
 }
 
 // ------------------ 新增護理紀錄頁 ------------------
@@ -44,22 +56,31 @@ if (location.pathname.includes("add_record.html")) {
   const params = new URLSearchParams(location.search);
   const patientId = params.get("id");
 
-  document.getElementById("backBtn").href =
-    `record_list.html?id=${patientId}`;
+  document.getElementById("backBtn").href = `record_list.html?id=${patientId}`;
 
-  document.getElementById("recordForm").onsubmit = e => {
+  document.getElementById("recordForm").onsubmit = async e => {
     e.preventDefault();
 
     const datetime = document.getElementById("datetime").value;
     const content = document.getElementById("content").value;
 
-    const allRecords = getRecords();
-    if (!allRecords[patientId]) allRecords[patientId] = [];
+    const payload = {
+      patient_id: Number(patientId),
+      nurse_id: 1, // 若有登入系統，請改為實際 nurse_id
+      content,
+      created_at: datetime || new Date().toISOString()
+    };
 
-    allRecords[patientId].push({ datetime, content });
-    saveRecords(allRecords);
-
-    alert("新增成功");
-    location.href = `record_list.html?id=${patientId}`;
+    try {
+      await apiFetch('/records', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      alert("新增成功");
+      location.href = `record_list.html?id=${patientId}`;
+    } catch (err) {
+      console.error("新增紀錄失敗", err);
+      alert("新增紀錄失敗：" + err.message);
+    }
   };
 }
