@@ -161,7 +161,7 @@ textarea {
 .two-col {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 24px;
 }
 
 /* ===== 表單總排版 ===== */
