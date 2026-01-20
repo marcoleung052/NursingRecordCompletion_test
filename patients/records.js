@@ -99,3 +99,54 @@ if (location.pathname.includes("add_record.html")) {
     }
   };
 }
+
+import { apiFetch } from "../assets/js/api.js";
+
+// 呼叫 AI 補全 API
+async function callAICompletion(prompt) {
+  const res = await apiFetch("/api/predict", {
+    method: "POST",
+    body: JSON.stringify({
+      prompt,
+      model: "gpt2-nursing"
+    })
+  });
+
+  return res.completions; // 回傳 3 個候選
+}
+
+// 綁定按鈕事件
+document.getElementById("aiBtn").onclick = async () => {
+  const prompt = document.getElementById("aiPrompt").value.trim();
+  const box = document.getElementById("aiResults");
+
+  if (!prompt) {
+    alert("請先輸入內容");
+    return;
+  }
+
+  box.innerHTML = "<p>AI 正在生成中...</p>";
+
+  try {
+    const results = await callAICompletion(prompt);
+
+    box.innerHTML = results
+      .map((text, i) => `
+        <div class="ai-option" data-text="${encodeURIComponent(text)}">
+          <strong>建議 ${i + 1}</strong><br>${text}
+        </div>
+      `)
+      .join("");
+
+    // 點擊候選 → 填入 textarea
+    document.querySelectorAll(".ai-option").forEach(opt => {
+      opt.onclick = () => {
+        const text = decodeURIComponent(opt.dataset.text);
+        document.getElementById("content").value = text; // ⭐ 填入紀錄內容欄位
+      };
+    });
+
+  } catch (err) {
+    box.innerHTML = `<p>AI 生成失敗：${err.message}</p>`;
+  }
+};
