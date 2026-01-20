@@ -1,7 +1,7 @@
 import { apiFetch } from "../assets/js/api.js";
 
 // ------------------ 護理紀錄列表頁 ------------------
-if (location.pathname.includes("record_list.html")) {
+if (location.pathname.includes("patients.html")) {
 
   const params = new URLSearchParams(location.search);
   const patientId = params.get("id");
@@ -38,7 +38,7 @@ if (location.pathname.includes("record_list.html")) {
   }
 
   document.getElementById("addRecordBtn").href = `add_record.html?id=${patientId}`;
-  document.getElementById("backBtn").href = `patient_detail.html?id=${patientId}`;
+  document.getElementById("backBtn").href = `patient_overview.html?id=${patientId}`;
 
   loadPatientInfo();
   loadRecords();
