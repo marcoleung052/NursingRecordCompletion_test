@@ -46,7 +46,7 @@ if (location.pathname.includes("patients.html")) {
           <td>${p.admit_date || p.admitDate || ""}</td>
           <td class="actions">
             <a class="btn-small" href="patient_overview.html?id=${p.id}">查看</a>
-            <a class="btn-small-secondary" href="../records/add_record.html?id=${p.id}">編寫紀錄</a>
+            <a class="btn-small-secondary" href="../patients/add_record.html?id=${p.id}">編寫紀錄</a>
           </td>
         </tr>
       `).join("");
