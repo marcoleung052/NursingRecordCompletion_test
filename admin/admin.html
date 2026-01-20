@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="utf-8">
+  <title>管理員後台</title>
+  <link rel="stylesheet" href="../assets/css/styles.css">
+</head>
+<body>
+
+<script src="../assets/js/layout.js"></script>
+
+<div class="container">
+
+  <h2>管理員後台</h2>
+
+  <!-- 新增護理師 -->
+  <div class="form-card">
+    <h3>新增護理師</h3>
+
+    <form id="addNurseForm" class="form-grid">
+
+      <label>姓名
+        <input id="name" required>
+      </label>
+
+      <label>員工編號（staff_id）
+        <input id="staff_id" required>
+      </label>
+
+      <label>科別
+        <input id="department">
+      </label>
+
+      <label>職位
+        <input id="position">
+      </label>
+
+      <label>電話
+        <input id="phone">
+      </label>
+
+      <label>電郵
+        <input id="email">
+      </label>
+
+      <button class="btn" type="submit">新增護理師</button>
+    </form>
+  </div>
+
+  <!-- 護理師列表 -->
+  <h3 style="margin-top:40px;">護理師列表</h3>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>姓名</th>
+        <th>員工編號</th>
+        <th>科別</th>
+        <th>職位</th>
+        <th>電話</th>
+        <th>電郵</th>
+      </tr>
+    </thead>
+    <tbody id="nurseList"></tbody>
+  </table>
+
+</div>
+
+<script type="module" src="admin.js"></script>
+
+</body>
+</html>
