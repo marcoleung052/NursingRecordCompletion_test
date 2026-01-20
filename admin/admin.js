@@ -15,6 +15,14 @@ async function loadNurses() {
         <td>${n.position || ""}</td>
         <td>${n.phone || ""}</td>
         <td>${n.email || ""}</td>
+        <td>
+          <button class="btn-small reset-password" data-id="${n.id}">
+            重設密碼
+          </button>
+          <button class="btn-small-secondary delete-nurse" data-id="${n.id}" style="background:#dc2626;color:white;">
+            刪除
+          </button>
+        </td>
       </tr>
     `).join("");
 
@@ -50,8 +58,10 @@ document.getElementById("addNurseForm").onsubmit = async e => {
   }
 };
 
-loadNurses();
+// 刪除 + 重設密碼
 document.addEventListener("click", async e => {
+
+  // 刪除護理師
   if (e.target.classList.contains("delete-nurse")) {
     const id = e.target.dataset.id;
 
@@ -61,4 +71,14 @@ document.addEventListener("click", async e => {
     alert("已刪除");
     loadNurses();
   }
+
+  // 重設密碼
+  if (e.target.classList.contains("reset-password")) {
+    const id = e.target.dataset.id;
+
+    await apiFetch(`/nurses/${id}/reset-password`, { method: "PUT" });
+    alert("密碼已重設（密碼 = staff_id）");
+  }
 });
+
+loadNurses();
