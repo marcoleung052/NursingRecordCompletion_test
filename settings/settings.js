@@ -1,11 +1,17 @@
-function loadProfile() {
-  const profile = JSON.parse(localStorage.getItem("profile") || "{}");
-  document.getElementById("name").value = profile.name || "張護理師";
-  document.getElementById("staffId").value = profile.staffId || "N001";
-  document.getElementById("email").value = profile.email || "nurse.chang@hospital.com";
-  document.getElementById("phone").value = profile.phone || "0912-345-678";
-  document.getElementById("department").value = profile.department || "內科";
-  document.getElementById("position").value = profile.position || "資深護理師";
+import { apiFetch } from "../assets/js/api.js";
+
+async function loadProfile() {
+  const token = localStorage.getItem("token");
+  const nurse = await apiFetch(`/current-user?token=${token}`);
+
+  document.getElementById("name").value = nurse.name;
+  document.getElementById("staffId").value = nurse.staff_id;
+  document.getElementById("email").value = nurse.email || "";
+  document.getElementById("phone").value = nurse.phone || "";
+  document.getElementById("department").value = nurse.department || "";
+  document.getElementById("position").value = nurse.position || "";
+
+  document.getElementById("account").value = nurse.staff_id;
 }
 
 function logout() {
@@ -14,27 +20,37 @@ function logout() {
   location.href = "../index.html";
 }
 
-document.getElementById("settingsForm").onsubmit = e => {
+document.getElementById("settingsForm").onsubmit = async e => {
   e.preventDefault();
 
-  const newPwd = document.getElementById("newPwd").value;
-  const confirmPwd = document.getElementById("confirmPwd").value;
+  const token = localStorage.getItem("token");
 
-  if (newPwd && newPwd !== confirmPwd) {
-    alert("新密碼與確認密碼不一致");
-    return;
-  }
-
-  const profile = {
+  const payload = {
     name: document.getElementById("name").value,
-    staffId: document.getElementById("staffId").value,
+    staff_id: document.getElementById("staffId").value,
     email: document.getElementById("email").value,
     phone: document.getElementById("phone").value,
     department: document.getElementById("department").value,
-    position: document.getElementById("position").value
+    position: document.getElementById("position").value,
   };
 
-  localStorage.setItem("profile", JSON.stringify(profile));
+  // 密碼更新
+  const newPwd = document.getElementById("newPwd").value;
+  const confirmPwd = document.getElementById("confirmPwd").value;
+
+  if (newPwd) {
+    if (newPwd !== confirmPwd) {
+      alert("新密碼與確認密碼不一致");
+      return;
+    }
+    payload.password = newPwd;
+  }
+
+  await apiFetch(`/nurses/${token}`, {
+    method: "PUT",
+    body: JSON.stringify(payload)
+  });
+
   alert("設定已更新");
 };
 
