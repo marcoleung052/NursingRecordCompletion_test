@@ -359,3 +359,20 @@ textarea {
   margin-bottom: 24px;
 }
 
+.ai-box {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f1f5f9;
+  border-radius: 8px;
+}
+.ai-option {
+  padding: 10px;
+  background: white;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  border: 1px solid #cbd5e1;
+}
+.ai-option:hover {
+  background: #e2e8f0;
+}
