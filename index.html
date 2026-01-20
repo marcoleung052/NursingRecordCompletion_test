@@ -51,6 +51,13 @@ document.getElementById("loginForm").onsubmit = async e => {
     alert("登入失敗：" + err.message);
   }
 };
+  if (res.role === "admin") {
+  localStorage.setItem("token", "admin");
+  location.href = "admin/admin.html";
+} else {
+  localStorage.setItem("token", res.id);
+  location.href = "patients/patients.html";
+}
 </script>
 
 </body>
