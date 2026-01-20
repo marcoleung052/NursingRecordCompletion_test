@@ -1,28 +1,22 @@
-function requireLogin() {
+// 讓 HTML 可以呼叫 requireLogin()
+window.requireLogin = function () {
   const token = localStorage.getItem("token");
   if (!token) {
     location.href = "../index.html";
   }
-}
-
-import { getCurrentNurse } from "./nurse.js";
-
-async function initHeader() {
-  const nurse = await getCurrentNurse();
-
-  renderHeader(nurse?.name || "未登入");
-}
-
-initHeader();
+};
 
 import { apiFetch } from "./api.js";
 
+// 自動載入 Header
 async function initHeader() {
   const token = localStorage.getItem("token");
 
   let user = null;
 
-  if (token) {
+  if (token === "admin") {
+    user = { name: "Admin" };
+  } else if (token) {
     try {
       user = await apiFetch(`/current-user?token=${token}`);
     } catch (err) {
@@ -35,14 +29,14 @@ async function initHeader() {
 
 initHeader();
 
+// Header UI
 function renderHeader(username = "未登入") {
+  const isSubPage =
+    location.pathname.includes("/patients/") ||
+    location.pathname.includes("/records/") ||
+    location.pathname.includes("/settings/") ||
+    location.pathname.includes("/admin/");
 
-  // 判斷目前頁面是否在子資料夾
-  const isSubPage = location.pathname.includes("/patients/") ||
-                    location.pathname.includes("/records/") ||
-                    location.pathname.includes("/settings/");
-
-  // 根據層級決定正確路徑
   const homePath = isSubPage ? "../patients/patients.html" : "patients/patients.html";
   const settingsPath = isSubPage ? "../settings/settings.html" : "settings/settings.html";
 
