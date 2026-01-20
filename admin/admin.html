@@ -7,12 +7,16 @@
 </head>
 <body>
 
+<!-- Header + Login 保護 -->
 <script type="module" src="../assets/js/layout.js"></script>
 <script>
   requireLogin();
 </script>
 
+<!-- Admin JS -->
 <script type="module" src="admin.js"></script>
+
+<div class="container">
 
   <h2>管理員後台</h2>
 
@@ -21,7 +25,7 @@
     <h3>新增護理師</h3>
 
     <form id="addNurseForm" class="form-grid">
-
+<div class="two-col">
       <label>姓名
         <input id="name" required>
       </label>
@@ -29,7 +33,8 @@
       <label>員工編號（staff_id）
         <input id="staff_id" required>
       </label>
-
+</div>
+      <div class="two-col">
       <label>科別
         <input id="department">
       </label>
@@ -37,7 +42,8 @@
       <label>職位
         <input id="position">
       </label>
-
+      </div>
+      <div class="two-col">
       <label>電話
         <input id="phone">
       </label>
@@ -45,7 +51,7 @@
       <label>電郵
         <input id="email">
       </label>
-
+</div>
       <button class="btn" type="submit">新增護理師</button>
     </form>
   </div>
@@ -70,8 +76,6 @@
   </table>
 
 </div>
-
-<script type="module" src="admin.js"></script>
 
 </body>
 </html>
