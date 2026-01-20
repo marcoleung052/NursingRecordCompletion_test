@@ -354,7 +354,8 @@ textarea {
 
 .page-header {
   display: flex;
+  justify-content: space-between; /* 左右分散 */
   align-items: center;
-  gap: 24px;
   margin-bottom: 24px;
 }
+
