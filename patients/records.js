@@ -1,5 +1,5 @@
 // patients/records.js
-import { apiFetch } from "../js/api.js";
+import { apiFetch } from "../assets/js/api.js";
 
 // 取得紀錄（若仍有 localStorage fallback，可保留）
 function localGetPatients() {
