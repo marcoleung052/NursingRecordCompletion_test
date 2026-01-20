@@ -51,3 +51,14 @@ document.getElementById("addNurseForm").onsubmit = async e => {
 };
 
 loadNurses();
+document.addEventListener("click", async e => {
+  if (e.target.classList.contains("delete-nurse")) {
+    const id = e.target.dataset.id;
+
+    if (!confirm("確定要刪除這位護理師嗎？")) return;
+
+    await apiFetch(`/nurses/${id}`, { method: "DELETE" });
+    alert("已刪除");
+    loadNurses();
+  }
+});
