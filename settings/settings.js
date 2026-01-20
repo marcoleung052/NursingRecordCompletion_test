@@ -1,6 +1,6 @@
 import { apiFetch } from "../assets/js/api.js";
 
-export function logout() {
+function logout() {
   localStorage.removeItem("token");
   location.href = "../index.html";
 }
@@ -9,6 +9,13 @@ window.logout = logout; // ⭐ 讓 HTML 可以呼叫 logout()
 
 async function loadProfile() {
   const token = localStorage.getItem("token");
+
+  if (token === "admin") {
+    alert("管理員不能使用系統設定頁");
+    location.href = "../admin/admin.html";
+    return;
+  }
+
   const nurse = await apiFetch(`/current-user?token=${token}`);
 
   document.getElementById("name").value = nurse.name;
