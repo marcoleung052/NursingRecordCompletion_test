@@ -22,15 +22,11 @@
         <input type="datetime-local" id="datetime" required>
       </label>
 
-      <div class="form-card">
-      <h3>AI 護理紀錄補全</h3>
-    
-      <label>輸入部分內容（停止輸入 1 秒後自動補全）
-        <textarea id="aiPrompt" rows="4" placeholder="例如：D: 病人主訴..."></textarea>
-      </label>
-    
-      <div id="aiResults" class="ai-box"></div>
-    </div>
+      <label>紀錄內容
+  <textarea id="content" rows="6" required></textarea>
+</label>
+
+<div id="aiSuggestBox" class="ai-suggest-box"></div>
 
       <button type="submit" class="btn">新增</button>
       <a class="btn-secondary" href="#" id="backBtn">返回</a>
