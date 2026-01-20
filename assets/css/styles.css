@@ -359,20 +359,23 @@ textarea {
   margin-bottom: 24px;
 }
 
-.ai-box {
-  margin-top: 12px;
-  padding: 12px;
-  background: #f1f5f9;
-  border-radius: 8px;
-}
-.ai-option {
-  padding: 10px;
+.ai-suggest-box {
+  position: absolute;
   background: white;
-  border-radius: 6px;
-  margin-bottom: 8px;
-  cursor: pointer;
   border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 6px;
+  width: 100%;
+  max-width: 600px;
+  display: none;
+  z-index: 10;
 }
-.ai-option:hover {
+
+.ai-suggest-item {
+  padding: 6px;
+  cursor: pointer;
+}
+
+.ai-suggest-item.active {
   background: #e2e8f0;
 }
