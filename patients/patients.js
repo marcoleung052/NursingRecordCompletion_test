@@ -73,14 +73,20 @@ if (location.pathname.includes("add_patient.html")) {
 
     const payload = {
       name: document.getElementById("name").value,
-      mrn: document.getElementById("mrn").value,
-      age: document.getElementById("age").value,
+      birth: document.getElementById("birth").value,
       gender: document.getElementById("gender").value,
+      phone: document.getElementById("phone").value,
+      email: document.getElementById("email").value,
+
+      emg_name: document.getElementById("emgName").value,
+      emg_phone: document.getElementById("emgPhone").value,
+      emg_relation: document.getElementById("emgRelation").value,
+
       room: document.getElementById("room").value,
       department: document.getElementById("department").value,
+      doctor: document.getElementById("doctor").value,
       diagnosis: document.getElementById("diagnosis").value,
       risk: document.getElementById("risk").value,
-      doctor: document.getElementById("doctor").value,
       admit_date: document.getElementById("admitDate").value
     };
 
@@ -97,7 +103,6 @@ if (location.pathname.includes("add_patient.html")) {
     }
   };
 }
-
 // ------------------ 病患詳細頁 ------------------
 if (location.pathname.includes("patient_detail.html") || location.pathname.includes("patient_overview.html")) {
   const params = new URLSearchParams(location.search);
