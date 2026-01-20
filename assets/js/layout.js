@@ -1,3 +1,10 @@
+function requireLogin() {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    location.href = "../index.html";
+  }
+}
+
 import { getCurrentNurse } from "./nurse.js";
 
 async function initHeader() {
