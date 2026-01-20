@@ -41,23 +41,16 @@ document.getElementById("loginForm").onsubmit = async e => {
     // 儲存 token
     if (res.role === "admin") {
       localStorage.setItem("token", "admin");
+      location.href = "admin/admin.html";   // ⭐ 管理員跳這裡
     } else {
       localStorage.setItem("token", res.id);
+      location.href = "patients/patients.html";  // ⭐ 護理師跳這裡
     }
-
-    location.href = "patients/patients.html";
 
   } catch (err) {
     alert("登入失敗：" + err.message);
   }
 };
-  if (res.role === "admin") {
-  localStorage.setItem("token", "admin");
-  location.href = "admin/admin.html";
-} else {
-  localStorage.setItem("token", res.id);
-  location.href = "patients/patients.html";
-}
 </script>
 
 </body>
