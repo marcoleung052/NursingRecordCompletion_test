@@ -194,3 +194,4 @@ box.addEventListener("click", (e) => {
   activeIndex = Number(item.dataset.index);
   acceptSuggestion();
 });
+}
