@@ -165,7 +165,7 @@ if (location.pathname.includes("patient_detail.html") || location.pathname.inclu
   };
 
   document.getElementById("addRecordBtn").onclick = () => {
-    location.href = `../records/add_record.html?id=${id}`;
+    location.href = `../patients/add_record.html?id=${id}`;
   };
 
   // 初次載入
