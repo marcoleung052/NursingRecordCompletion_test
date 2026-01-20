@@ -6,11 +6,14 @@
   <link rel="stylesheet" href="../assets/css/styles.css">
 </head>
 <body>
-  <script type="module" src="../assets/js/layout.js"></script>
+
+<!-- Header + Login 保護 -->
+<script type="module" src="../assets/js/layout.js"></script>
 <script>
   requireLogin();
 </script>
-  <div class="container">
+
+<div class="container">
   <h2>系統設定</h2>
   <p>管理您的個人檔案和系統設定</p>
 
@@ -82,6 +85,9 @@
 
   </form>
 </div>
-<script src="settings.js"></script>
+
+<!-- ⭐ 必須用 module 才能使用 import -->
+<script type="module" src="settings.js"></script>
+
 </body>
 </html>
