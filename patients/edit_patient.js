@@ -30,7 +30,6 @@ if (location.pathname.includes("edit_patient.html")) {
     }
   }
 
-  // 儲存變更
   document.getElementById("saveBtn").onclick = async () => {
     const payload = {
       name: document.getElementById("name").value,
@@ -64,7 +63,6 @@ if (location.pathname.includes("edit_patient.html")) {
     }
   };
 
-  // 刪除病患
   document.getElementById("deleteBtn").onclick = async () => {
     if (!confirm("確定要刪除這位病患嗎？")) return;
 
@@ -77,7 +75,6 @@ if (location.pathname.includes("edit_patient.html")) {
     }
   };
 
-  // 返回病患資料
   document.getElementById("backBtn").onclick = () => {
     location.href = `patient_overview.html?id=${id}`;
   };
