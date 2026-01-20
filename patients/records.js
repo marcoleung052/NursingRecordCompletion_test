@@ -90,54 +90,107 @@ if (location.pathname.includes("add_record.html")) {
   };
 
   // ------------------ AI 補全 ------------------
-  let typingTimer = null;
-  const delay = 1000;
+let typingTimer = null;
+const delay = 1000;
 
-  async function callAI(prompt) {
-    const res = await apiFetch("/api/predict", {
-      method: "POST",
-      body: JSON.stringify({ prompt })
-    });
-    return res.completions;
+const textarea = document.getElementById("content");
+const box = document.getElementById("aiSuggestBox");
+
+let suggestions = [];
+let activeIndex = 0;
+
+// 呼叫 AI
+async function callAI(prompt) {
+  const res = await apiFetch("/api/predict", {
+    method: "POST",
+    body: JSON.stringify({ prompt })
+  });
+  return res.completions;
+}
+
+// 顯示建議列表
+function showSuggestions(list) {
+  suggestions = list;
+  activeIndex = 0;
+
+  box.innerHTML = list
+    .map((s, i) => `
+      <div class="ai-suggest-item ${i === 0 ? "active" : ""}" data-index="${i}">
+        ${s}
+      </div>
+    `)
+    .join("");
+
+  const rect = textarea.getBoundingClientRect();
+  box.style.top = rect.bottom + window.scrollY + "px";
+  box.style.left = rect.left + window.scrollX + "px";
+  box.style.width = rect.width + "px";
+  box.style.display = "block";
+}
+
+// 接受補全
+function acceptSuggestion() {
+  const text = suggestions[activeIndex];
+  textarea.value = text;
+  hideSuggestions();
+}
+
+// 隱藏建議
+function hideSuggestions() {
+  box.style.display = "none";
+  suggestions = [];
+}
+
+// 監聽輸入
+textarea.addEventListener("input", () => {
+  clearTimeout(typingTimer);
+
+  const text = textarea.value.trim();
+  if (!text) {
+    hideSuggestions();
+    return;
   }
 
-  const promptBox = document.getElementById("aiPrompt");
-  const resultBox = document.getElementById("aiResults");
-
-  promptBox.addEventListener("input", () => {
-    clearTimeout(typingTimer);
-
-    const text = promptBox.value.trim();
-    if (!text) {
-      resultBox.innerHTML = "";
-      return;
+  typingTimer = setTimeout(async () => {
+    try {
+      const results = await callAI(text);
+      showSuggestions(results);
+    } catch (err) {
+      hideSuggestions();
     }
+  }, delay);
+});
 
-    typingTimer = setTimeout(async () => {
-      resultBox.innerHTML = "<p>AI 正在生成中...</p>";
+// 鍵盤控制
+textarea.addEventListener("keydown", (e) => {
+  if (suggestions.length === 0) return;
 
-      try {
-        const results = await callAI(text);
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    activeIndex = (activeIndex + 1) % suggestions.length;
+  }
 
-        resultBox.innerHTML = results
-          .map((t, i) => `
-            <div class="ai-option" data-text="${encodeURIComponent(t)}">
-              <strong>建議 ${i + 1}</strong><br>${t}
-            </div>
-          `)
-          .join("");
+  if (e.key === "ArrowUp") {
+    e.preventDefault();
+    activeIndex = (activeIndex - 1 + suggestions.length) % suggestions.length;
+  }
 
-        document.querySelectorAll(".ai-option").forEach(opt => {
-          opt.onclick = () => {
-            const text = decodeURIComponent(opt.dataset.text);
-            document.getElementById("content").value = text;
-          };
-        });
+  if (e.key === "Tab") {
+    e.preventDefault();
+    acceptSuggestion();
+  }
 
-      } catch (err) {
-        resultBox.innerHTML = `<p>AI 生成失敗：${err.message}</p>`;
-      }
-
-    }, delay);
+  // 更新 active 樣式
+  document.querySelectorAll(".ai-suggest-item").forEach((el, i) => {
+    el.classList.toggle("active", i === activeIndex);
   });
-}
+});
+
+// 滑鼠點擊接受
+box.addEventListener("click", (e) => {
+  const item = e.target.closest(".ai-suggest-item");
+  if (!item) return;
+
+  activeIndex = Number(item.dataset.index);
+  acceptSuggestion();
+});
