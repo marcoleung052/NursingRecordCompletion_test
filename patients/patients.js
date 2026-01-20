@@ -147,6 +147,11 @@ if (location.pathname.includes("patient_overview.html")) {
           <td>${r.created_at || ""}</td>
           <td>${r.content || ""}</td>
           <td>${r.nurse_id || ""}</td>
+          <td>
+            <button class="btn-small-secondary delete-record" data-id="${r.id}" style="background:#dc2626;color:white;">
+              刪除
+            </button>
+          </td>
         `;
         tbody.appendChild(tr);
       });
@@ -154,6 +159,32 @@ if (location.pathname.includes("patient_overview.html")) {
       console.error("讀取紀錄失敗", err);
     }
   }
+  document.addEventListener("click", async (e) => {
+  if (e.target.classList.contains("delete-record")) {
+    const recordId = e.target.dataset.id;
+
+    if (!confirm("確定要刪除這筆紀錄嗎？")) return;
+
+    try {
+      await apiFetch(`/records/${recordId}`, { method: "DELETE" });
+      alert("紀錄已刪除");
+      loadRecords(); // 重新載入紀錄列表
+    } catch (err) {
+      alert("刪除失敗：" + err.message);
+    }
+  }
+});
+  document.getElementById("deletePatientBtn").onclick = async () => {
+  if (!confirm("確定要刪除這位病患嗎？\n（所有護理紀錄也會被刪除）")) return;
+
+  try {
+    await apiFetch(`/patients/${id}`, { method: "DELETE" });
+    alert("病患已刪除");
+    location.href = "patients.html";
+  } catch (err) {
+    alert("刪除失敗：" + err.message);
+  }
+};
 
   document.getElementById("editPatientBtn").onclick = () => {
     location.href = `edit_patient.html?id=${id}`;
