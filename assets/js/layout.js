@@ -40,6 +40,13 @@ function renderHeader(username = "未登入") {
   const homePath = isSubPage ? "../patients/patients.html" : "patients/patients.html";
   const settingsPath = isSubPage ? "../settings/settings.html" : "settings/settings.html";
 
+  const token = localStorage.getItem("token");
+
+  // ⭐ admin 顯示「登出」
+  const rightMenu = token === "admin"
+    ? `<a href="#" id="logoutLink">登出</a>`
+    : `<a href="${settingsPath}">系統設定</a>`;
+
   const header = document.createElement("header");
   header.innerHTML = `
     <div class="header-bar">
@@ -48,9 +55,17 @@ function renderHeader(username = "未登入") {
       </div>
       <div class="user-info">
         <span>${username}</span>
-        <a href="${settingsPath}">系統設定</a>
+        ${rightMenu}
       </div>
     </div>
   `;
   document.body.prepend(header);
+
+  // ⭐ admin 的登出功能
+  if (token === "admin") {
+    document.getElementById("logoutLink").onclick = () => {
+      localStorage.removeItem("token");
+      location.href = "../index.html";
+    };
+  }
 }
