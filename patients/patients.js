@@ -1,5 +1,5 @@
 // patients/patients.js
-import { apiFetch } from "../js/api.js";
+import { apiFetch } from "../assets/js/api.js";
 
 // ------------------ 病患列表頁 ------------------
 if (location.pathname.includes("patients.html")) {
