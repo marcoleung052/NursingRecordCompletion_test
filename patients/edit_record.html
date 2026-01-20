@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="utf-8">
+  <title>編輯護理紀錄</title>
+  <link rel="stylesheet" href="../assets/css/styles.css">
+</head>
+<body>
+
+<!-- Header + Login 保護 -->
+<script type="module" src="../assets/js/layout.js"></script>
+<script>
+  requireLogin();
+</script>
+
+<div class="container">
+  <h2>編輯護理紀錄</h2>
+
+  <form id="editRecordForm" class="form-card">
+
+    <label>紀錄 ID
+      <input id="recordId" disabled>
+    </label>
+
+    <label>病患 ID
+      <input id="patientId" disabled>
+    </label>
+
+    <label>紀錄時間
+      <input id="time" type="datetime-local" required>
+    </label>
+
+    <label>護理紀錄內容
+      <textarea id="note" rows="6" required></textarea>
+    </label>
+
+    <div class="form-actions">
+      <button type="submit" class="btn">儲存更新</button>
+      <button type="button" class="btn-secondary" id="cancelBtn">取消</button>
+    </div>
+
+  </form>
+</div>
+
+<script type="module" src="edit_record.js"></script>
+
+</body>
+</html>
