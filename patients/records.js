@@ -50,10 +50,14 @@ if (location.pathname.includes("record_list.html")) {
   loadPatientInfo();
   loadRecords();
 }
-document.getElementById("recordSearch").oninput = () => {
-  const keyword = document.getElementById("recordSearch").value.trim();
-  filterRecords(keyword);
-};
+const searchBox = document.getElementById("recordSearch");
+if (searchBox) {
+  searchBox.oninput = () => {
+    const keyword = searchBox.value.trim();
+    filterRecords(keyword);
+  };
+}
+
 function filterRecords(keyword) {
   const rows = document.querySelectorAll("#recordBody tr");
 
