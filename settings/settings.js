@@ -1,5 +1,12 @@
 import { apiFetch } from "../assets/js/api.js";
 
+export function logout() {
+  localStorage.removeItem("token");
+  location.href = "../index.html";
+}
+
+window.logout = logout; // ⭐ 讓 HTML 可以呼叫 logout()
+
 async function loadProfile() {
   const token = localStorage.getItem("token");
   const nurse = await apiFetch(`/current-user?token=${token}`);
@@ -10,15 +17,10 @@ async function loadProfile() {
   document.getElementById("phone").value = nurse.phone || "";
   document.getElementById("department").value = nurse.department || "";
   document.getElementById("position").value = nurse.position || "";
-
   document.getElementById("account").value = nurse.staff_id;
 }
 
-function logout() {
-  localStorage.removeItem("auth");
-  localStorage.removeItem("username");
-  location.href = "../index.html";
-}
+loadProfile();
 
 document.getElementById("settingsForm").onsubmit = async e => {
   e.preventDefault();
@@ -31,10 +33,9 @@ document.getElementById("settingsForm").onsubmit = async e => {
     email: document.getElementById("email").value,
     phone: document.getElementById("phone").value,
     department: document.getElementById("department").value,
-    position: document.getElementById("position").value,
+    position: document.getElementById("position").value
   };
 
-  // 密碼更新
   const newPwd = document.getElementById("newPwd").value;
   const confirmPwd = document.getElementById("confirmPwd").value;
 
@@ -53,5 +54,3 @@ document.getElementById("settingsForm").onsubmit = async e => {
 
   alert("設定已更新");
 };
-
-loadProfile();
