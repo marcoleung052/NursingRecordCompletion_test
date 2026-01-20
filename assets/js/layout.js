@@ -10,14 +10,23 @@ initHeader();
 
 import { apiFetch } from "./api.js";
 
-export async function getCurrentNurse() {
-  try {
-    return await apiFetch("/current-nurse");
-  } catch (err) {
-    console.error("無法取得護理師資料", err);
-    return null;
+async function initHeader() {
+  const token = localStorage.getItem("token");
+
+  let user = null;
+
+  if (token) {
+    try {
+      user = await apiFetch(`/current-user?token=${token}`);
+    } catch (err) {
+      console.error("無法取得登入者資料");
+    }
   }
+
+  renderHeader(user?.name || "未登入");
 }
+
+initHeader();
 
 function renderHeader(username = "未登入") {
 
