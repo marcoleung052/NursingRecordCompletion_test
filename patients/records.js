@@ -77,7 +77,7 @@ if (location.pathname.includes("add_record.html")) {
         body: JSON.stringify(payload)
       });
       alert("新增成功");
-      location.href = `record_list.html?id=${patientId}`;
+      location.href = `patient_overview.html?id=${patientId}`;
     } catch (err) {
       console.error("新增紀錄失敗", err);
       alert("新增紀錄失敗：" + err.message);
