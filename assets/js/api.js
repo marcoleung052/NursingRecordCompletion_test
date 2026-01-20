@@ -1,28 +1,42 @@
 // api.js - 共用 API wrapper
-const API_BASE = "https://marcoleung052-nursing-copilot-api.hf.space"; // 空字串代表同源；若後端在不同域名，填完整 URL
 
+// 後端資料庫 API
+const API_BASE = "https://marcoleung052-nursing-copilot-api.hf.space";
+
+// AI 模型 API
+const AI_BASE  = "https://marcoleung052-nursing-copilot-api.hf.space/api";
+
+// ------------------ 通用 fetch ------------------
 async function apiFetch(path, opts = {}) {
   const url = `${API_BASE}${path}`;
+  return fetchWrapper(url, opts);
+}
+
+async function apiFetchAI(path, opts = {}) {
+  const url = `${AI_BASE}${path}`;
+  return fetchWrapper(url, opts);
+}
+
+// ------------------ 內部共用函式 ------------------
+async function fetchWrapper(url, opts = {}) {
   const defaultHeaders = { "Content-Type": "application/json" };
-  if (!opts.headers) opts.headers = defaultHeaders;
-  else opts.headers = { ...defaultHeaders, ...opts.headers };
+  opts.headers = { ...defaultHeaders, ...(opts.headers || {}) };
 
   const res = await fetch(url, opts);
+
   if (!res.ok) {
     let errText = res.statusText;
     try {
       const body = await res.json();
       errText = body.detail || body.message || JSON.stringify(body);
-    } catch (e) {
-      // ignore JSON parse error
-    }
+    } catch (_) {}
     const err = new Error(errText);
     err.status = res.status;
     throw err;
   }
-  // 如果沒有內容 (204) 則回傳 null
+
   if (res.status === 204) return null;
   return res.json();
 }
 
-export { apiFetch };
+export { apiFetch, apiFetchAI };
