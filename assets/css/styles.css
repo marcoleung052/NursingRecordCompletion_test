@@ -141,7 +141,7 @@ form label {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  height: 60px; /* 可依實際內容調整 */
+  height: 80px; /* 可依實際內容調整 */
   font-weight: 500;
 }
 
