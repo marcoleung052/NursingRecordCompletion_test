@@ -141,9 +141,8 @@ form label {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  height: 100px; /* 可依實際內容調整 */
+  height: 60px; /* 可依實際內容調整 */
   font-weight: 500;
-  min-height: 100px;
 }
 
 input, select, textarea {
