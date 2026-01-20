@@ -50,7 +50,18 @@ if (location.pathname.includes("record_list.html")) {
   loadPatientInfo();
   loadRecords();
 }
+document.getElementById("recordSearch").oninput = () => {
+  const keyword = document.getElementById("recordSearch").value.trim();
+  filterRecords(keyword);
+};
+function filterRecords(keyword) {
+  const rows = document.querySelectorAll("#recordBody tr");
 
+  rows.forEach(row => {
+    const text = row.innerText;
+    row.style.display = text.includes(keyword) ? "" : "none";
+  });
+}
 // ------------------ 新增護理紀錄頁 ------------------
 if (location.pathname.includes("add_record.html")) {
   const params = new URLSearchParams(location.search);
