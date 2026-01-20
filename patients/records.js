@@ -56,7 +56,7 @@ if (location.pathname.includes("add_record.html")) {
   const params = new URLSearchParams(location.search);
   const patientId = params.get("id");
 
-  document.getElementById("backBtn").href = `record_list.html?id=${patientId}`;
+  document.getElementById("backBtn").href = `patient_overview.html?id=${patientId}`;
 
   document.getElementById("recordForm").onsubmit = async e => {
     e.preventDefault();
