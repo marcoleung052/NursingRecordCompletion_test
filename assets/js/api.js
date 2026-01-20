@@ -1,5 +1,5 @@
 // api.js - 共用 API wrapper
-const API_BASE = "https://marcoleung052-vieshow-backend.hf.space/api"; // 空字串代表同源；若後端在不同域名，填完整 URL
+const API_BASE = "https://marcoleung052-nursing-copilot-api.hf.space/api"; // 空字串代表同源；若後端在不同域名，填完整 URL
 
 async function apiFetch(path, opts = {}) {
   const url = `${API_BASE}${path}`;
