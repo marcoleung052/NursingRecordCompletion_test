@@ -1,39 +1,57 @@
 <!DOCTYPE html>
-<html lang="zh-HK">
+<html>
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>系統登入</title>
+  <title>登入系統</title>
   <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body>
-  <div class="login-card">
-    <h2>系統登入</h2>
-    <form id="loginForm">
-      <label>帳號<input id="user" required></label>
-      <label>密碼<input id="pass" type="password" required></label>
-      <button type="submit">登入</button>
-      <div id="msg" class="msg"></div>
-    </form>
-  </div>
-<script>
-if(!localStorage.getItem('demoUser')) {
-  localStorage.setItem('demoUser', JSON.stringify({user:'admin',pass:'1234'}));
-}
-document.getElementById('loginForm').addEventListener('submit', e=>{
+
+<div class="container">
+  <h2>登入</h2>
+
+  <form id="loginForm">
+    <label>帳號
+      <input id="username" required>
+    </label>
+
+    <label>密碼
+      <input id="password" type="password" required>
+    </label>
+
+    <button class="btn">登入</button>
+  </form>
+</div>
+
+<script type="module">
+import { apiFetch } from "./assets/js/api.js";
+
+document.getElementById("loginForm").onsubmit = async e => {
   e.preventDefault();
-  const u=document.getElementById('user').value;
-  const p=document.getElementById('pass').value;
-  const demo=JSON.parse(localStorage.getItem('demoUser'));
-  const msg=document.getElementById('msg');
-  if(u===demo.user && p===demo.pass){
-    msg.textContent='登入成功，跳轉中...'; 
-    localStorage.setItem('auth','true');
-    window.location.href='patients/patients.html';
-  } else {
-    msg.textContent='帳號或密碼錯誤';
+
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+
+  try {
+    const res = await apiFetch("/login", {
+      method: "POST",
+      body: JSON.stringify({ username, password })
+    });
+
+    // 儲存 token
+    if (res.role === "admin") {
+      localStorage.setItem("token", "admin");
+    } else {
+      localStorage.setItem("token", res.id);
+    }
+
+    location.href = "patients/patients.html";
+
+  } catch (err) {
+    alert("登入失敗：" + err.message);
   }
-});
+};
 </script>
+
 </body>
 </html>
