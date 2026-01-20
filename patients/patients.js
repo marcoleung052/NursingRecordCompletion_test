@@ -27,7 +27,6 @@ if (location.pathname.includes("patients.html")) {
       const dept = deptFilter.value;
       const res = await fetchPatients({ q: keyword, department: dept, page: currentPage, page_size: pageSize });
 
-      // 假設後端回傳陣列；若後端回傳 {items, total}，請調整下面程式
       const all = Array.isArray(res) ? res : (res.items || []);
       const total = Array.isArray(res) ? all.length : (res.total || all.length);
 
@@ -37,16 +36,16 @@ if (location.pathname.includes("patients.html")) {
 
       tbody.innerHTML = list.map(p => `
         <tr>
-          <td>${p.name || ""}<br>${p.mrn || ""}・${p.age || ""}歲・${p.gender || ""}</td>
+          <td>${p.name || ""}<br>${p.mrn || ""}・${p.gender || ""}</td>
           <td>${p.room || ""}</td>
           <td>${p.department || ""}</td>
           <td>${p.diagnosis || ""}</td>
           <td>${p.risk || ""}</td>
           <td>${p.doctor || ""}</td>
-          <td>${p.admit_date || p.admitDate || ""}</td>
+          <td>${p.admit_date || ""}</td>
           <td class="actions">
             <a class="btn-small" href="patient_overview.html?id=${p.id}">查看</a>
-            <a class="btn-small-secondary" href="../patients/add_record.html?id=${p.id}">編寫紀錄</a>
+            <a class="btn-small-secondary" href="../records/add_record.html?id=${p.id}">編寫紀錄</a>
           </td>
         </tr>
       `).join("");
@@ -62,7 +61,6 @@ if (location.pathname.includes("patients.html")) {
   searchInput.oninput = () => { currentPage = 1; renderList(); };
   deptFilter.onchange = () => { currentPage = 1; renderList(); };
 
-  // 初次載入
   renderList();
 }
 
@@ -73,6 +71,7 @@ if (location.pathname.includes("add_patient.html")) {
 
     const payload = {
       name: document.getElementById("name").value,
+      mrn: document.getElementById("mrn").value,
       birth: document.getElementById("birth").value,
       gender: document.getElementById("gender").value,
       phone: document.getElementById("phone").value,
@@ -103,20 +102,19 @@ if (location.pathname.includes("add_patient.html")) {
     }
   };
 }
+
 // ------------------ 病患詳細頁 ------------------
-if (location.pathname.includes("patient_detail.html") || location.pathname.includes("patient_overview.html")) {
+if (location.pathname.includes("patient_overview.html")) {
   const params = new URLSearchParams(location.search);
   const id = params.get("id");
 
   async function loadPatient() {
     try {
       const p = await apiFetch(`/patients/${id}`);
-      if (!p) {
-        document.getElementById("detailBox").innerHTML = "<p>找不到病患資料</p>";
-        return;
-      }
+      if (!p) return;
 
       document.getElementById("p_name").textContent = p.name || "";
+      document.getElementById("p_mrn").textContent = p.mrn || "";
       document.getElementById("p_birth").textContent = p.birth || "";
       document.getElementById("p_gender").textContent = p.gender || "";
       document.getElementById("p_phone").textContent = p.phone || "";
@@ -131,23 +129,22 @@ if (location.pathname.includes("patient_detail.html") || location.pathname.inclu
       document.getElementById("p_doctor").textContent = p.doctor || "";
       document.getElementById("p_diagnosis").textContent = p.diagnosis || "";
       document.getElementById("p_risk").textContent = p.risk || "";
-      document.getElementById("p_admit").textContent = p.admit_date || p.admitDate || "";
+      document.getElementById("p_admit").textContent = p.admit_date || "";
     } catch (err) {
       console.error("讀取病患失敗", err);
-      document.getElementById("detailBox").innerHTML = `<p>讀取病患失敗：${err.message}</p>`;
     }
   }
 
-  // 取得護理紀錄
   async function loadRecords() {
     try {
       const records = await apiFetch(`/records/${id}`);
       const tbody = document.getElementById("recordBody");
       tbody.innerHTML = "";
+
       (records || []).forEach(r => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${r.created_at || r.datetime || ""}</td>
+          <td>${r.created_at || ""}</td>
           <td>${r.content || ""}</td>
           <td>${r.nurse_id || ""}</td>
         `;
@@ -155,8 +152,6 @@ if (location.pathname.includes("patient_detail.html") || location.pathname.inclu
       });
     } catch (err) {
       console.error("讀取紀錄失敗", err);
-      const tbody = document.getElementById("recordBody");
-      tbody.innerHTML = `<tr><td colspan="3">讀取紀錄失敗：${err.message}</td></tr>`;
     }
   }
 
@@ -165,10 +160,9 @@ if (location.pathname.includes("patient_detail.html") || location.pathname.inclu
   };
 
   document.getElementById("addRecordBtn").onclick = () => {
-    location.href = `../patients/add_record.html?id=${id}`;
+    location.href = `../records/add_record.html?id=${id}`;
   };
 
-  // 初次載入
   loadPatient();
   loadRecords();
 }
