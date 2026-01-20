@@ -1,3 +1,24 @@
+import { getCurrentNurse } from "./nurse.js";
+
+async function initHeader() {
+  const nurse = await getCurrentNurse();
+
+  renderHeader(nurse?.name || "未登入");
+}
+
+initHeader();
+
+import { apiFetch } from "./api.js";
+
+export async function getCurrentNurse() {
+  try {
+    return await apiFetch("/current-nurse");
+  } catch (err) {
+    console.error("無法取得護理師資料", err);
+    return null;
+  }
+}
+
 function renderHeader(username = "未登入") {
 
   // 判斷目前頁面是否在子資料夾
