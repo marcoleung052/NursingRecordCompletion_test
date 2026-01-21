@@ -31,7 +31,6 @@ const nurse = await apiFetch(`/nurses/${token}`);
   document.getElementById("phone").value = nurse.phone || "";
   document.getElementById("department").value = nurse.department || "";
   document.getElementById("position").value = nurse.position || "";
-  document.getElementById("account").value = nurse.staff_id;
 }
 
 loadProfile();
