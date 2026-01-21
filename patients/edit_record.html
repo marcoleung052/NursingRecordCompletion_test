@@ -7,36 +7,15 @@
 </head>
 <body>
 
-<!-- Header + Login 保護 -->
 <script type="module">
   import "../assets/js/layout.js";
-  if (!window.requireLogin()) {
-    throw new Error("未登入，停止執行");
-  }
+  window.requireLogin();
 </script>
-<script type="module">
-  import { initAISuggestion } from "../assets/js/ai_helper.js";
-
-  const textarea = document.getElementById("note");
-  const overlay = document.getElementById("overlay");
-
-  initAISuggestion(textarea, overlay);
-</script>
-  <script type="module" src="records.js"></script>
-
 
 <div class="container">
   <h2>編輯護理紀錄</h2>
 
   <form id="editRecordForm" class="form-card">
-
-    <label>紀錄 ID
-      <input id="recordId" disabled>
-    </label>
-
-    <label>病患 ID
-      <input id="patientId" disabled>
-    </label>
 
     <label>紀錄時間
       <input id="time" type="datetime-local" required>
@@ -56,7 +35,7 @@
   </form>
 </div>
 
-<script type="module" src="record.js"></script>
+<script type="module" src="edit_record.js"></script>
 
 </body>
 </html>
