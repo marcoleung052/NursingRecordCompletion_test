@@ -23,8 +23,8 @@ async function loadProfile() {
     return;
   }
 
-  const nurse = await apiFetch(`/current-user?token=${token}`);
-
+const nurse = await apiFetch(`/nurses/${token}`);
+  
   document.getElementById("name").value = nurse.name;
   document.getElementById("staffId").value = nurse.staff_id;
   document.getElementById("email").value = nurse.email || "";
