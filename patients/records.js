@@ -76,7 +76,7 @@ if (location.pathname.includes("add_record.html")) {
 
     const payload = {
       patient_id: Number(patientId),
-      nurse_id: 1,
+      nurse_id: nurseId,
       content,
       created_at: datetime || new Date().toISOString()
     };
