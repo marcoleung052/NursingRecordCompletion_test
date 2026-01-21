@@ -119,9 +119,10 @@ async function callAI(prompt) {
   isLoading = false;
 }
 
-// 更新 ghost text
+const ghost = document.getElementById("ghostText");
+
 function updateGhost(text) {
-  textarea.setAttribute("data-ghost", text);
+  ghost.textContent = text;
 }
 
 // 接受補全
