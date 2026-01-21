@@ -12,6 +12,14 @@
     throw new Error("未登入，停止執行");
   }
 </script>
+<script type="module">
+  import { initAISuggestion } from "../assets/js/ai_helper.js";
+
+  const textarea = document.getElementById("content");
+  const overlay = document.getElementById("overlay");
+
+  initAISuggestion(textarea, overlay);
+</script>
 
 <script type="module" src="records.js"></script>
 
