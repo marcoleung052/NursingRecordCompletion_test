@@ -2,27 +2,27 @@
 window.requireLogin = function () {
   const token = localStorage.getItem("token");
   if (!token) {
+    alert("你沒有登入，請重新登入");
     location.href = "../index.html";
+    return false;   // ⭐ 阻止後續程式碼
   }
+  return true;
 };
 
 // ⭐ 讓 HTML 或 settings.js 可以呼叫 logout()
-window.logout = function () {
-  localStorage.removeItem("token");
-  location.href = "../index.html";
-};
-
-import { apiFetch } from "./api.js";
-
-// 自動載入 Header
 async function initHeader() {
-  const token = localStorage.getItem("token");
 
+  // ⭐ 如果沒有登入 → 完全不做任何事
+  if (!localStorage.getItem("token")) {
+    return;
+  }
+
+  const token = localStorage.getItem("token");
   let user = null;
 
   if (token === "admin") {
     user = { name: "Admin" };
-  } else if (token) {
+  } else {
     try {
       user = await apiFetch(`/current-user?token=${token}`);
     } catch (err) {
