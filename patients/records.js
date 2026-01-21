@@ -226,5 +226,5 @@ if (location.pathname.includes("edit_record.html")) {
       acceptSuggestion();
     }
   });
-}
+
 
