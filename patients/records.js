@@ -62,7 +62,7 @@ if (location.pathname.includes("add_record.html")) {
   const params = new URLSearchParams(location.search);
   const patientId = params.get("id");
 
-  document.getElementById("backBtn").href = `patient_detail.html?id=${patientId}`;
+  document.getElementById("backBtn").href = `patient_overview.html?id=${patientId}`;
 
   document.getElementById("recordForm").onsubmit = async e => {
     e.preventDefault();
@@ -83,7 +83,7 @@ if (location.pathname.includes("add_record.html")) {
         body: JSON.stringify(payload)
       });
       alert("新增成功");
-      location.href = `patient_detail.html?id=${patientId}`;
+      location.href = `patient_overview.html?id=${patientId}`;
     } catch (err) {
       alert("新增紀錄失敗：" + err.message);
     }
