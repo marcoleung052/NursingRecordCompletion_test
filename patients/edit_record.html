@@ -32,9 +32,11 @@
       <input id="time" type="datetime-local" required>
     </label>
 
-    <label>護理紀錄內容
-      <textarea id="note" rows="6" required></textarea>
-    </label>
+    <label for="note">護理紀錄內容</label>
+    <div class="copilot-container">
+      <div id="overlay" class="suggestion-overlay"></div>
+      <textarea id="note" class="record-textarea" rows="8" required></textarea>
+    </div>
 
     <div class="form-actions">
       <button type="submit" class="btn">儲存更新</button>
