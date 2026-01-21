@@ -90,39 +90,46 @@ if (location.pathname.includes("add_record.html")) {
   };
 
   // ------------------ AI 補全 ------------------
-let typingTimer = null;
-const delay = 1000;
-
 const textarea = document.getElementById("content");
+const overlay = document.getElementById("overlay");
 
 let suggestions = [];
 let activeIndex = 0;
 let isLoading = false;
+let typingTimer = null;
+const delay = 800;
 
 // 呼叫 AI
 async function callAI(prompt) {
   isLoading = true;
-  updateGhost("(正在補全…)");
+  renderOverlay(prompt, "(正在補全…)");
 
   try {
     const res = await apiFetch("/api/predict", {
       method: "POST",
       body: JSON.stringify({ prompt })
     });
+
     suggestions = res.completions;
     activeIndex = 0;
-    updateGhost(suggestions[0]?.slice(prompt.length) || "");
+
+    const full = suggestions[0] || prompt;
+    const suffix = full.slice(prompt.length);
+
+    renderOverlay(prompt, suffix);
   } catch (err) {
-    updateGhost("");
+    renderOverlay(prompt, "");
   }
 
   isLoading = false;
 }
 
-const ghost = document.getElementById("ghostText");
-
-function updateGhost(text) {
-  ghost.textContent = text;
+// 更新 overlay（兩層）
+function renderOverlay(prefix, suffix) {
+  overlay.innerHTML = `
+    <span style="color: transparent;">${prefix}</span>
+    <span style="color: #ccc;">${suffix}</span>
+  `;
 }
 
 // 接受補全
@@ -130,16 +137,16 @@ function acceptSuggestion() {
   const base = textarea.value;
   const full = suggestions[activeIndex] || base;
   textarea.value = full;
-  updateGhost("");
+  renderOverlay(full, "");
 }
 
 // 監聽輸入
 textarea.addEventListener("input", () => {
   clearTimeout(typingTimer);
 
-  const text = textarea.value.trim();
-  if (!text) {
-    updateGhost("");
+  const text = textarea.value;
+  if (!text.trim()) {
+    overlay.innerHTML = "";
     return;
   }
 
@@ -155,19 +162,25 @@ textarea.addEventListener("keydown", (e) => {
   if (e.key === "ArrowDown") {
     e.preventDefault();
     activeIndex = (activeIndex + 1) % suggestions.length;
-    updateGhost(suggestions[activeIndex].slice(textarea.value.length));
+
+    const full = suggestions[activeIndex];
+    const suffix = full.slice(textarea.value.length);
+    renderOverlay(textarea.value, suffix);
   }
 
   if (e.key === "ArrowUp") {
     e.preventDefault();
     activeIndex = (activeIndex - 1 + suggestions.length) % suggestions.length;
-    updateGhost(suggestions[activeIndex].slice(textarea.value.length));
+
+    const full = suggestions[activeIndex];
+    const suffix = full.slice(textarea.value.length);
+    renderOverlay(textarea.value, suffix);
   }
 
   if (e.key === "Tab") {
     e.preventDefault();
     acceptSuggestion();
   }
-}); 
+});
 
 }
