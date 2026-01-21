@@ -359,23 +359,22 @@ textarea {
   margin-bottom: 24px;
 }
 
-.ai-suggest-box {
+textarea[data-ghost] {
+  position: relative;
+  font-family: inherit;
+  font-size: inherit;
+  color: black;
+}
+
+textarea[data-ghost]::after {
+  content: attr(data-ghost);
   position: absolute;
-  background: white;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  padding: 6px;
-  width: 100%;
-  max-width: 600px;
-  display: none;
-  z-index: 10;
-}
-
-.ai-suggest-item {
-  padding: 6px;
-  cursor: pointer;
-}
-
-.ai-suggest-item.active {
-  background: #e2e8f0;
+  top: 8px;
+  left: 8px;
+  color: #999;
+  pointer-events: none;
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: inherit;
+  opacity: 0.6;
 }
