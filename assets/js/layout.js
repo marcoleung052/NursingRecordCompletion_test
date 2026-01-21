@@ -1,7 +1,4 @@
-// ⭐ layout.js 是 module，所以可以使用 import
-import { apiFetch } from "./api.js";
-
-// ⭐ 把 requireLogin 掛到 window，讓 HTML 可以呼叫
+// 讓 HTML 可以呼叫 requireLogin()
 window.requireLogin = function () {
   const token = localStorage.getItem("token");
   if (!token) {
@@ -9,7 +6,15 @@ window.requireLogin = function () {
   }
 };
 
-// ⭐ 自動載入 Header
+// ⭐ 讓 HTML 或 settings.js 可以呼叫 logout()
+window.logout = function () {
+  localStorage.removeItem("token");
+  location.href = "../index.html";
+};
+
+import { apiFetch } from "./api.js";
+
+// 自動載入 Header
 async function initHeader() {
   const token = localStorage.getItem("token");
 
@@ -30,7 +35,7 @@ async function initHeader() {
 
 initHeader();
 
-// ⭐ Header UI
+// Header UI
 function renderHeader(username = "未登入") {
   const isSubPage =
     location.pathname.includes("/patients/") ||
@@ -64,8 +69,7 @@ function renderHeader(username = "未登入") {
 
   if (token === "admin") {
     document.getElementById("logoutLink").onclick = () => {
-      localStorage.removeItem("token");
-      location.href = "../index.html";
+      window.logout();
     };
   }
 }
