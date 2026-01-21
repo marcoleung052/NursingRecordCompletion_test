@@ -167,5 +167,6 @@ textarea.addEventListener("keydown", (e) => {
     e.preventDefault();
     acceptSuggestion();
   }
-});
+}); 
+
 }
