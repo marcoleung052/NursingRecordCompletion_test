@@ -11,7 +11,16 @@
   import "../assets/js/layout.js";
   window.requireLogin();
 </script>
+<script type="module">
+  import { initAISuggestion } from "../assets/js/ai_helper.js";
 
+  const textarea = document.getElementById("content");
+  const overlay = document.getElementById("overlay");
+
+  initAISuggestion(textarea, overlay);
+</script>
+
+<script type="module" src="records.js"></script>
 <div class="container">
   <h2>編輯護理紀錄</h2>
 
@@ -35,7 +44,6 @@
   </form>
 </div>
 
-<script type="module" src="edit_record.js"></script>
 
 </body>
 </html>
