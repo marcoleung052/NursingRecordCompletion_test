@@ -359,22 +359,28 @@ textarea {
   margin-bottom: 24px;
 }
 
-textarea[data-ghost] {
+.ghost-wrapper {
   position: relative;
-  font-family: inherit;
-  font-size: inherit;
-  color: black;
 }
 
-textarea[data-ghost]::after {
-  content: attr(data-ghost);
+.ghost-text {
   position: absolute;
   top: 8px;
   left: 8px;
+  right: 8px;
   color: #999;
-  pointer-events: none;
   white-space: pre-wrap;
+  pointer-events: none;
   font-family: inherit;
   font-size: inherit;
   opacity: 0.6;
+}
+
+textarea {
+  position: relative;
+  background: transparent;
+  font-family: inherit;
+  font-size: inherit;
+  color: black;
+  z-index: 2;
 }
