@@ -1,9 +1,12 @@
 import { apiFetch } from "../assets/js/api.js";
 
-function logout() {
-  localStorage.removeItem("token");
-  location.href = "../index.html";
-}
+// 讓 HTML 可以呼叫 requireLogin()
+window.requireLogin = function () {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    location.href = "../index.html";
+  }
+};
 
 window.logout = logout; // ⭐ 讓 HTML 可以呼叫 logout()
 
