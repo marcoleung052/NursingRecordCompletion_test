@@ -88,6 +88,7 @@ if (location.pathname.includes("add_record.html")) {
       alert("新增紀錄失敗：" + err.message);
     }
   };
+}
 // ------------------ 編輯護理紀錄頁 ------------------
 if (location.pathname.includes("edit_record.html")) {
 
@@ -137,7 +138,7 @@ if (location.pathname.includes("edit_record.html")) {
   document.getElementById("cancelBtn").onclick = () => {
     history.back();
   };
-
+}
   // ------------------ AI 補全 ------------------
   const textarea = document.getElementById("note");   // ⭐ 正確
 
@@ -226,4 +227,4 @@ if (location.pathname.includes("edit_record.html")) {
     }
   });
 }
-}
+
