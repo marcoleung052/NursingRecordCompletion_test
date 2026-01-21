@@ -96,9 +96,8 @@ if (location.pathname.includes("edit_record.html")) {
 
   const timeInput = document.getElementById("time");
   const noteInput = document.getElementById("note");
-  const overlay = document.getElementById("overlay");
+  const overlay = document.getElementById("overlay");   // ⭐ 只宣告一次
 
-  // ⭐ 載入舊資料
   async function loadRecord() {
     try {
       const record = await apiFetch(`/records/detail/${recordId}`);
@@ -114,7 +113,6 @@ if (location.pathname.includes("edit_record.html")) {
 
   loadRecord();
 
-  // ⭐ 儲存更新
   document.getElementById("editRecordForm").onsubmit = async e => {
     e.preventDefault();
 
@@ -136,103 +134,95 @@ if (location.pathname.includes("edit_record.html")) {
     }
   };
 
-  // ⭐ 取消按鈕
   document.getElementById("cancelBtn").onclick = () => {
     history.back();
   };
 
   // ------------------ AI 補全 ------------------
-const textarea = document.getElementById("content");
-const overlay = document.getElementById("overlay");
+  const textarea = document.getElementById("note");   // ⭐ 正確
 
-let suggestions = [];
-let activeIndex = 0;
-let isLoading = false;
-let typingTimer = null;
-const delay = 800;
+  let suggestions = [];
+  let activeIndex = 0;
+  let isLoading = false;
+  let typingTimer = null;
+  const delay = 800;
 
-// 呼叫 AI
-async function callAI(prompt) {
-  isLoading = true;
-  renderOverlay(prompt, "(正在補全…)");
+  async function callAI(prompt) {
+    isLoading = true;
+    renderOverlay(prompt, "(正在補全…)");
 
-  try {
-    const res = await apiFetch("/api/predict", {
-      method: "POST",
-      body: JSON.stringify({ prompt })
-    });
+    try {
+      const res = await apiFetch("/api/predict", {
+        method: "POST",
+        body: JSON.stringify({ prompt })
+      });
 
-    suggestions = res.completions;
-    activeIndex = 0;
+      suggestions = res.completions;
+      activeIndex = 0;
 
-    const full = suggestions[0] || prompt;
-    const suffix = full.slice(prompt.length);
+      const full = suggestions[0] || prompt;
+      const suffix = full.slice(prompt.length);
 
-    renderOverlay(prompt, suffix);
-  } catch (err) {
-    renderOverlay(prompt, "");
+      renderOverlay(prompt, suffix);
+    } catch (err) {
+      renderOverlay(prompt, "");
+    }
+
+    isLoading = false;
   }
 
-  isLoading = false;
-}
-
-// 更新 overlay（兩層）
-function renderOverlay(prefix, suffix) {
-  overlay.innerHTML = `
-    <span style="color: transparent;">${prefix}</span>
-    <span style="color: #ccc;">${suffix}</span>
-  `;
-}
-
-// 接受補全
-function acceptSuggestion() {
-  const base = textarea.value;
-  const full = suggestions[activeIndex] || base;
-  textarea.value = full;
-  renderOverlay(full, "");
-}
-
-// 監聽輸入
-textarea.addEventListener("input", () => {
-  clearTimeout(typingTimer);
-
-  const text = textarea.value;
-  if (!text.trim()) {
-    overlay.innerHTML = "";
-    return;
+  function renderOverlay(prefix, suffix) {
+    overlay.innerHTML = `
+      <span style="color: transparent;">${prefix}</span>
+      <span style="color: #ccc;">${suffix}</span>
+    `;
   }
 
-  typingTimer = setTimeout(() => {
-    callAI(text);
-  }, delay);
-});
-
-// 鍵盤控制
-textarea.addEventListener("keydown", (e) => {
-  if (suggestions.length === 0 || isLoading) return;
-
-  if (e.key === "ArrowDown") {
-    e.preventDefault();
-    activeIndex = (activeIndex + 1) % suggestions.length;
-
-    const full = suggestions[activeIndex];
-    const suffix = full.slice(textarea.value.length);
-    renderOverlay(textarea.value, suffix);
+  function acceptSuggestion() {
+    const base = textarea.value;
+    const full = suggestions[activeIndex] || base;
+    textarea.value = full;
+    renderOverlay(full, "");
   }
 
-  if (e.key === "ArrowUp") {
-    e.preventDefault();
-    activeIndex = (activeIndex - 1 + suggestions.length) % suggestions.length;
+  textarea.addEventListener("input", () => {
+    clearTimeout(typingTimer);
 
-    const full = suggestions[activeIndex];
-    const suffix = full.slice(textarea.value.length);
-    renderOverlay(textarea.value, suffix);
-  }
+    const text = textarea.value;
+    if (!text.trim()) {
+      overlay.innerHTML = "";
+      return;
+    }
 
-  if (e.key === "Tab") {
-    e.preventDefault();
-    acceptSuggestion();
-  }
-});
+    typingTimer = setTimeout(() => {
+      callAI(text);
+    }, delay);
+  });
 
+  textarea.addEventListener("keydown", (e) => {
+    if (suggestions.length === 0 || isLoading) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      activeIndex = (activeIndex + 1) % suggestions.length;
+
+      const full = suggestions[activeIndex];
+      const suffix = full.slice(textarea.value.length);
+      renderOverlay(textarea.value, suffix);
+    }
+
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      activeIndex = (activeIndex - 1 + suggestions.length) % suggestions.length;
+
+      const full = suggestions[activeIndex];
+      const suffix = full.slice(textarea.value.length);
+      renderOverlay(textarea.value, suffix);
+    }
+
+    if (e.key === "Tab") {
+      e.preventDefault();
+      acceptSuggestion();
+    }
+  });
 }
