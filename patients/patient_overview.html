@@ -8,7 +8,9 @@
 <body>
 <script type="module">
   import "../assets/js/layout.js";
-  window.requireLogin();
+  if (!window.requireLogin()) {
+    throw new Error("未登入，停止執行");
+  }
 </script>
 
   <div class="container">
