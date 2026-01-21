@@ -28,8 +28,12 @@ if (location.pathname.includes("patients.html")) {
           <tr>
             <td>${r.created_at || ""}</td>
             <td>${r.content || ""}</td>
+            <td>
+              <a class="btn" href="edit_record.html?id=${r.id}">編輯</a>
+            </td>
           </tr>
         `).join("");
+
     } catch (err) {
       document.getElementById("recordList").innerHTML = `
         <tr><td colspan="2">讀取紀錄失敗：${err.message}</td></tr>
