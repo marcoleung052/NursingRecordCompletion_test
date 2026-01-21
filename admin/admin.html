@@ -8,9 +8,11 @@
 <body>
 
 <!-- Header + Login 保護 -->
-<script type="module" src="../assets/js/layout.js"></script>
-<script>
-  requireLogin();
+<script type="module">
+  import "../assets/js/layout.js";
+  if (!window.requireLogin()) {
+    throw new Error("未登入，停止執行");
+  }
 </script>
 
 <!-- Admin JS -->
