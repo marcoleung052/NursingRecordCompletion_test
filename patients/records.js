@@ -94,51 +94,42 @@ let typingTimer = null;
 const delay = 1000;
 
 const textarea = document.getElementById("content");
-const box = document.getElementById("aiSuggestBox");
 
 let suggestions = [];
 let activeIndex = 0;
+let isLoading = false;
 
 // 呼叫 AI
 async function callAI(prompt) {
-  const res = await apiFetch("/api/predict", {
-    method: "POST",
-    body: JSON.stringify({ prompt })
-  });
-  return res.completions;
+  isLoading = true;
+  updateGhost("(正在補全…)");
+
+  try {
+    const res = await apiFetch("/api/predict", {
+      method: "POST",
+      body: JSON.stringify({ prompt })
+    });
+    suggestions = res.completions;
+    activeIndex = 0;
+    updateGhost(suggestions[0]?.slice(prompt.length) || "");
+  } catch (err) {
+    updateGhost("");
+  }
+
+  isLoading = false;
 }
 
-// 顯示建議列表
-function showSuggestions(list) {
-  suggestions = list;
-  activeIndex = 0;
-
-  box.innerHTML = list
-    .map((s, i) => `
-      <div class="ai-suggest-item ${i === 0 ? "active" : ""}" data-index="${i}">
-        ${s}
-      </div>
-    `)
-    .join("");
-
-  const rect = textarea.getBoundingClientRect();
-  box.style.top = rect.bottom + window.scrollY + "px";
-  box.style.left = rect.left + window.scrollX + "px";
-  box.style.width = rect.width + "px";
-  box.style.display = "block";
+// 更新 ghost text
+function updateGhost(text) {
+  textarea.setAttribute("data-ghost", text);
 }
 
 // 接受補全
 function acceptSuggestion() {
-  const text = suggestions[activeIndex];
-  textarea.value = text;
-  hideSuggestions();
-}
-
-// 隱藏建議
-function hideSuggestions() {
-  box.style.display = "none";
-  suggestions = [];
+  const base = textarea.value;
+  const full = suggestions[activeIndex] || base;
+  textarea.value = full;
+  updateGhost("");
 }
 
 // 監聽輸入
@@ -147,51 +138,33 @@ textarea.addEventListener("input", () => {
 
   const text = textarea.value.trim();
   if (!text) {
-    hideSuggestions();
+    updateGhost("");
     return;
   }
 
-  typingTimer = setTimeout(async () => {
-    try {
-      const results = await callAI(text);
-      showSuggestions(results);
-    } catch (err) {
-      hideSuggestions();
-    }
+  typingTimer = setTimeout(() => {
+    callAI(text);
   }, delay);
 });
 
 // 鍵盤控制
 textarea.addEventListener("keydown", (e) => {
-  if (suggestions.length === 0) return;
+  if (suggestions.length === 0 || isLoading) return;
 
   if (e.key === "ArrowDown") {
     e.preventDefault();
     activeIndex = (activeIndex + 1) % suggestions.length;
+    updateGhost(suggestions[activeIndex].slice(textarea.value.length));
   }
 
   if (e.key === "ArrowUp") {
     e.preventDefault();
     activeIndex = (activeIndex - 1 + suggestions.length) % suggestions.length;
+    updateGhost(suggestions[activeIndex].slice(textarea.value.length));
   }
 
   if (e.key === "Tab") {
     e.preventDefault();
     acceptSuggestion();
   }
-
-  // 更新 active 樣式
-  document.querySelectorAll(".ai-suggest-item").forEach((el, i) => {
-    el.classList.toggle("active", i === activeIndex);
-  });
 });
-
-// 滑鼠點擊接受
-box.addEventListener("click", (e) => {
-  const item = e.target.closest(".ai-suggest-item");
-  if (!item) return;
-
-  activeIndex = Number(item.dataset.index);
-  acceptSuggestion();
-});
-}
