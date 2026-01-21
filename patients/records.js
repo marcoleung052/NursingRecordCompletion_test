@@ -88,6 +88,58 @@ if (location.pathname.includes("add_record.html")) {
       alert("新增紀錄失敗：" + err.message);
     }
   };
+// ------------------ 編輯護理紀錄頁 ------------------
+if (location.pathname.includes("edit_record.html")) {
+
+  const params = new URLSearchParams(location.search);
+  const recordId = params.get("id");
+
+  const timeInput = document.getElementById("time");
+  const noteInput = document.getElementById("note");
+  const overlay = document.getElementById("overlay");
+
+  // ⭐ 載入舊資料
+  async function loadRecord() {
+    try {
+      const record = await apiFetch(`/records/detail/${recordId}`);
+
+      timeInput.value = record.created_at.slice(0, 16);
+      noteInput.value = record.content;
+
+      renderOverlay(record.content, "");
+    } catch (err) {
+      alert("無法載入紀錄：" + err.message);
+    }
+  }
+
+  loadRecord();
+
+  // ⭐ 儲存更新
+  document.getElementById("editRecordForm").onsubmit = async e => {
+    e.preventDefault();
+
+    const payload = {
+      content: noteInput.value,
+      created_at: timeInput.value
+    };
+
+    try {
+      await apiFetch(`/records/${recordId}`, {
+        method: "PUT",
+        body: JSON.stringify(payload)
+      });
+
+      alert("更新成功");
+      history.back();
+    } catch (err) {
+      alert("更新失敗：" + err.message);
+    }
+  };
+
+  // ⭐ 取消按鈕
+  document.getElementById("cancelBtn").onclick = () => {
+    history.back();
+  };
 
   // ------------------ AI 補全 ------------------
 const textarea = document.getElementById("content");
