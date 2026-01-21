@@ -168,3 +168,4 @@ textarea.addEventListener("keydown", (e) => {
     acceptSuggestion();
   }
 });
+}
