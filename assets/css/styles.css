@@ -359,28 +359,30 @@ textarea {
   margin-bottom: 24px;
 }
 
-.ghost-wrapper {
+.copilot-container {
   position: relative;
+  width: 100%;
 }
 
-.ghost-text {
+.record-textarea {
+  width: 100%;
+  position: relative;
+  background: transparent;
+  z-index: 2;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.suggestion-overlay {
   position: absolute;
   top: 8px;
   left: 8px;
   right: 8px;
-  color: #999;
+  bottom: 8px;
+  color: #ccc;
   white-space: pre-wrap;
   pointer-events: none;
-  font-family: inherit;
-  font-size: inherit;
-  opacity: 0.6;
-}
-
-textarea {
-  position: relative;
-  background: transparent;
-  font-family: inherit;
-  font-size: inherit;
-  color: black;
-  z-index: 2;
+  font-size: 16px;
+  line-height: 1.5;
+  z-index: 1;
 }
