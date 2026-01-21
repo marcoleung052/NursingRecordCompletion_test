@@ -1,21 +1,26 @@
-// 讓 HTML 可以呼叫 requireLogin()
+// ------------------ Login 保護 ------------------
 window.requireLogin = function () {
   const token = localStorage.getItem("token");
   if (!token) {
     alert("你沒有登入，請重新登入");
     location.href = "../index.html";
-    return false;   // ⭐ 阻止後續程式碼
+    return false;
   }
   return true;
 };
 
-// ⭐ 讓 HTML 或 settings.js 可以呼叫 logout()
+// ------------------ Logout ------------------
+window.logout = function () {
+  localStorage.removeItem("token");
+  location.href = "../index.html";
+};
+
+import { apiFetch } from "./api.js";
+
+// ------------------ Header ------------------
 async function initHeader() {
 
-  // ⭐ 如果沒有登入 → 完全不做任何事
-  if (!localStorage.getItem("token")) {
-    return;
-  }
+  if (!localStorage.getItem("token")) return;
 
   const token = localStorage.getItem("token");
   let user = null;
@@ -24,7 +29,7 @@ async function initHeader() {
     user = { name: "Admin" };
   } else {
     try {
-      user = await apiFetch(`/current-user?token=${token}`);
+      user = await apiFetch(`/nurses/${token}`);
     } catch (err) {
       console.error("無法取得登入者資料");
     }
@@ -35,7 +40,6 @@ async function initHeader() {
 
 initHeader();
 
-// Header UI
 function renderHeader(username = "未登入") {
   const isSubPage =
     location.pathname.includes("/patients/") ||
