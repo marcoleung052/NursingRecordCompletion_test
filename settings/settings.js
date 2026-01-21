@@ -8,7 +8,11 @@ window.requireLogin = function () {
   }
 };
 
-window.logout = logout; // ⭐ 讓 HTML 可以呼叫 logout()
+// ⭐ 正確的 logout 寫法
+window.logout = function () {
+  localStorage.removeItem("token");
+  location.href = "../index.html";
+};
 
 async function loadProfile() {
   const token = localStorage.getItem("token");
