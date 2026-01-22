@@ -148,7 +148,7 @@ if (location.pathname.includes("patient_overview.html")) {
           <td>${r.content || ""}</td>
           <td>${r.nurse_id || ""}</td>
           <td>
-            <a class="btn-small" href="edit_record.html?rid=${r.id}&pid=${id}">編輯</a>
+            <a class="btn-small" href="edit_record.html?id=${r.id}&pid=${id}">編輯</a>
             <button class="btn-small-secondary delete-record" data-id="${r.id}" style="background:#dc2626;color:white;">
               刪除
             </button>
