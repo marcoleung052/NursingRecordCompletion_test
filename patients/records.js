@@ -73,6 +73,7 @@ if (location.pathname.includes("add_record.html")) {
 
     const datetime = document.getElementById("datetime").value;
     const content = document.getElementById("content").value;
+    const nurseId = Number(localStorage.getItem("token"));
 
     const payload = {
       patient_id: Number(patientId),
