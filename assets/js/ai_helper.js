@@ -27,7 +27,6 @@ const manualData = {
       "/；由轉送人員協助轉送病人返室"
     ]
   },
-
   // 3. 群組補全（逐項 + 選項）
   groupedCompletions: {
     "張眼": {
