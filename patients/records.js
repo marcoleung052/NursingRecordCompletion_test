@@ -102,19 +102,21 @@ if (location.pathname.includes("edit_record.html")) {
 
   const timeInput = document.getElementById("time");
   const noteInput = document.getElementById("note");
-  const overlay = document.getElementById("overlay");   // ⭐ 只宣告一次
+  const overlay = document.getElementById("overlay");
+
+  let currentRecord = null;   // ⭐ 用來存後端回來的紀錄
 
   import("../assets/js/ai_helper.js").then(({ initAISuggestion }) => {
     initAISuggestion(noteInput, overlay);
   });
 
-
   async function loadRecord() {
     try {
-      const record = await apiFetch(`/records/detail/${recordId}`);
+      currentRecord = await apiFetch(`/records/detail/${recordId}`);
 
-      timeInput.value = record.created_at.slice(0, 16);
-      noteInput.value = record.content;
+      timeInput.value = currentRecord.created_at.slice(0, 16);
+      noteInput.value = currentRecord.content;
+
     } catch (err) {
       alert("無法載入紀錄：" + err.message);
     }
@@ -125,9 +127,22 @@ if (location.pathname.includes("edit_record.html")) {
   document.getElementById("editRecordForm").onsubmit = async e => {
     e.preventDefault();
 
+    const nurseId = Number(localStorage.getItem("token"));
+    if (!nurseId) {
+      alert("登入資訊失效，請重新登入");
+      return;
+    }
+
+    // ⭐ created_at 必須補秒數
+    const createdAt = timeInput.value.includes(":")
+      ? timeInput.value + ":00"
+      : timeInput.value;
+
     const payload = {
+      patient_id: currentRecord.patient_id,  // ⭐ 必填
+      nurse_id: nurseId,                     // ⭐ 必填
       content: noteInput.value,
-      created_at: timeInput.value
+      created_at: createdAt
     };
 
     try {
@@ -139,7 +154,8 @@ if (location.pathname.includes("edit_record.html")) {
       alert("更新成功");
       history.back();
     } catch (err) {
-      alert("更新失敗：" + err.message);
+      console.error("更新錯誤：", err);
+      alert("更新失敗：" + JSON.stringify(err));
     }
   };
 
