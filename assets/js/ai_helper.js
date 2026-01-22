@@ -31,13 +31,30 @@ const manualData = {
   // 3. 群組補全（逐項 + 選項）
   groupedCompletions: {
     "張眼": {
-      template: "張眼：x 分 ({選項}) / 眼睛緊閉",
-      options: ["Spontaneous", "none", "to speech", "to pain"]
-    },
-    "語言": {
-      template: "語言：x 分 ({選項}) / 插氣管內管",
-      options: ["alert", "confused", "none", "groans", "drowsy"]
-    },
+       type: "multi",   // 多選
+       templates: [
+         {
+           template: "張眼：x 分 ({選項})",
+           options: ["Spontaneous", "none", "to speech", "to pain"]
+         },
+         {
+           template: "張眼：眼睛緊閉"
+         }
+       ]
+     },
+   "語言": {
+       type: "multi",
+       templates: [
+         {
+           template: "語言：x 分 ({選項})",
+           options: ["alert", "confused", "none", "groans", "drowsy"]
+         },
+         {
+           template: "語言：插氣管內管"
+         }
+       ]
+     }
+   ,
     "運動": {
       template: "運動：x 分 ({選項})",
       options: ["obeys", "localized pain", "withdrawl"]
