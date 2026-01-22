@@ -115,8 +115,6 @@ if (location.pathname.includes("edit_record.html")) {
 
       timeInput.value = record.created_at.slice(0, 16);
       noteInput.value = record.content;
-
-      renderOverlay(record.content, "");
     } catch (err) {
       alert("無法載入紀錄：" + err.message);
     }
