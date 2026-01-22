@@ -35,7 +35,7 @@ if (location.pathname.includes("patients.html")) {
         `).join("");
 
     } catch (err) {
-      document.getElementById("recordList").innerHTML = `
+      document.getElementById("recordBody").innerHTML = `
         <tr><td colspan="2">讀取紀錄失敗：${err.message}</td></tr>
       `;
     }
