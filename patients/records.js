@@ -104,6 +104,11 @@ if (location.pathname.includes("edit_record.html")) {
   const noteInput = document.getElementById("note");
   const overlay = document.getElementById("overlay");   // ⭐ 只宣告一次
 
+  import("../assets/js/ai_helper.js").then(({ initAISuggestion }) => {
+    initAISuggestion(noteInput, overlay);
+  });
+
+
   async function loadRecord() {
     try {
       const record = await apiFetch(`/records/detail/${recordId}`);
