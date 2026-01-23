@@ -294,3 +294,4 @@ export function initAISuggestion(textarea, overlay) {
     overlay.innerHTML = "";
   }
 });
+}
