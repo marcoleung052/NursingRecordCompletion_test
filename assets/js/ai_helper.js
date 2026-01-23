@@ -110,33 +110,74 @@ const manualData = {
 /* ---------------------------------------------------------
    手動補全邏輯
 --------------------------------------------------------- */
-function getManualCompletion(text) {
+function tryManualCompletion(text) {
   const last = text.split(/[\s\n]/).pop();
+  const result = getManualCompletion(text);
+  if (!result) return false;
 
-  // 1. 生命徵象連續補全
-  const seq = manualData.vitalSignsSequence.find(v => last.includes(v.key));
-  if (seq) return { type: "sequence", data: seq.template };
-
-  // 2. 單句補全
-  if (manualData.singleCompletions[last]) {
-    return { type: "multi", data: manualData.singleCompletions[last] };
+  // 1. 生命徵象 / 體重序列（連續補全）
+  if (result.type === "sequence") {
+    overlay.innerHTML = `
+      <span style="color: transparent;">${text}</span>
+      <span style="color: #ccc;">${result.data}</span>
+    `;
+    aiSuggestions = [result.data];   // 只顯示下一個
+    activeIndex = 0;
+    return true;
   }
 
-  // 3. 群組補全
-  if (manualData.groupedCompletions[last]) {
-    return { type: "options", data: manualData.groupedCompletions[last] };
+  // 2. 多段句子（Admitted / 依醫囑給予）
+  if (result.type === "multi" && Array.isArray(result.data)) {
+    overlay.innerHTML = `
+      <span style="color: transparent;">${text}</span>
+      <span style="color: #ccc;">${result.data[0]}</span>
+    `;
+    aiSuggestions = result.data;     // 多個選項
+    activeIndex = 0;
+    return true;
   }
 
-  // 4. 體重序列
-  const w = manualData.weightSequence.find(v => last.includes(v.key));
-  if (w) return { type: "sequence", data: w.template };
+  // 3. 群組補全（張眼 / 語言 → 多模板）
+  if (result.type === "options" && result.data.templates) {
+    const first = result.data.templates[0];
 
-  // 5. 依醫囑給予
-  if (manualData.doctorOrderOptions[last]) {
-    return { type: "multi", data: manualData.doctorOrderOptions[last] };
+    let preview = first.template;
+    if (first.options) {
+      preview = preview.replace("{選項}", first.options.join(" / "));
+    }
+
+    overlay.innerHTML = `
+      <span style="color: transparent;">${text}</span>
+      <span style="color: #ccc;">${preview}</span>
+    `;
+
+    // 把所有模板展開成可選項目
+    aiSuggestions = result.data.templates.map(t => {
+      if (t.options) {
+        return t.template.replace("{選項}", t.options.join(" / "));
+      }
+      return t.template;
+    });
+
+    activeIndex = 0;
+    return true;
   }
 
-  return null;
+  // 4. 群組補全（單模板 + 選項）
+  if (result.type === "options" && result.data.template) {
+    const preview = result.data.template.replace("{選項}", result.data.options.join(" / "));
+
+    overlay.innerHTML = `
+      <span style="color: transparent;">${text}</span>
+      <span style="color: #ccc;">${preview}</span>
+    `;
+
+    aiSuggestions = [preview];
+    activeIndex = 0;
+    return true;
+  }
+
+  return false;
 }
 
 /* ---------------------------------------------------------
@@ -230,13 +271,26 @@ export function initAISuggestion(textarea, overlay) {
 
   /* ---------------- 事件：鍵盤 ---------------- */
   textarea.addEventListener("keydown", (e) => {
-    if (aiSuggestions.length === 0 || isLoading) return;
+  if (aiSuggestions.length === 0) return;
 
-    if (e.key === "Tab") {
-      e.preventDefault();
-      const full = aiSuggestions[activeIndex];
-      textarea.value = full;
-      renderOverlay(full, "");
-    }
-  });
-}
+  // 上下鍵切換選項
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    activeIndex = (activeIndex + 1) % aiSuggestions.length;
+    renderOverlay(textarea.value, aiSuggestions[activeIndex]);
+  }
+
+  if (e.key === "ArrowUp") {
+    e.preventDefault();
+    activeIndex = (activeIndex - 1 + aiSuggestions.length) % aiSuggestions.length;
+    renderOverlay(textarea.value, aiSuggestions[activeIndex]);
+  }
+
+  // Tab 接受補全
+  if (e.key === "Tab") {
+    e.preventDefault();
+    const full = aiSuggestions[activeIndex];
+    textarea.value = full;
+    overlay.innerHTML = "";
+  }
+});
