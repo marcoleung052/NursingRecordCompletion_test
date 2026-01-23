@@ -23,53 +23,55 @@ const manualData = {
   // 2. 單句補全（含多段）
   singleCompletions: {
     "Admitted": [
-      "Admitted at xx:xx，入院護理已完成。簡訊通知  醫師，新病人已入院。",
+      "Admitted at xx:xx，入院護理已完成。簡訊通知 醫師，新病人已入院。",
       "/；由轉送人員協助轉送病人返室"
     ]
   },
+
   // 3. 群組補全（逐項 + 選項）
   groupedCompletions: {
     "張眼": {
-       type: "multi",   // 多選
-       templates: [
-         {
-           template: "張眼：x 分 ({選項})",
-           options: ["Spontaneous", "none", "to speech", "to pain"]
-         },
-         {
-           template: "張眼：眼睛緊閉"
-         }
-       ]
-     },
-   "語言": {
-       type: "multi",
-       templates: [
-         {
-           template: "語言：x 分 ({選項})",
-           options: ["alert", "confused", "none", "groans", "drowsy"]
-         },
-         {
-           template: "語言：插氣管內管"
-         }
-       ]
-     }
-   ,
+      type: "multi",
+      templates: [
+        {
+          template: "張眼：x 分 ({選項})",
+          options: ["Spontaneous", "none", "to speech", "to pain"]
+        },
+        { template: "張眼：眼睛緊閉" }
+      ]
+    },
+
+    "語言": {
+      type: "multi",
+      templates: [
+        {
+          template: "語言：x 分 ({選項})",
+          options: ["alert", "confused", "none", "groans", "drowsy"]
+        },
+        { template: "語言：插氣管內管" }
+      ]
+    },
+
     "運動": {
       template: "運動：x 分 ({選項})",
       options: ["obeys", "localized pain", "withdrawl"]
     },
+
     "活動力": {
       template: "活動力：{選項}",
       options: ["正常", "臥床", "軟弱"]
     },
+
     "呼吸速率": {
       template: "呼吸速率：{選項}",
       options: ["正常", "快"]
     },
+
     "大便型態": {
       template: "大便型態：{選項}",
       options: ["正常", "其他 -- 術後尚未解便"]
     },
+
     "皮膚完整性": {
       template: "皮膚完整性：{選項}",
       options: ["是", "否"]
@@ -108,40 +110,75 @@ const manualData = {
 };
 
 /* ---------------------------------------------------------
-   手動補全邏輯
+   getManualCompletion（核心）
 --------------------------------------------------------- */
-function tryManualCompletion(text) {
+function getManualCompletion(text) {
   const last = text.split(/[\s\n]/).pop();
+
+  // 1. 生命徵象
+  const seq = manualData.vitalSignsSequence.find(v => last.includes(v.key));
+  if (seq) return { type: "sequence", data: seq.template };
+
+  // 2. 單句補全
+  if (manualData.singleCompletions[last]) {
+    return { type: "multi", data: manualData.singleCompletions[last] };
+  }
+
+  // 3. 群組補全（多模板）
+  if (manualData.groupedCompletions[last]) {
+    const g = manualData.groupedCompletions[last];
+
+    if (g.type === "multi") {
+      return { type: "multiTemplates", data: g.templates };
+    }
+
+    return { type: "options", data: g };
+  }
+
+  // 4. 體重序列
+  const w = manualData.weightSequence.find(v => last.includes(v.key));
+  if (w) return { type: "sequence", data: w.template };
+
+  // 5. 依醫囑給予
+  if (manualData.doctorOrderOptions[last]) {
+    return { type: "multi", data: manualData.doctorOrderOptions[last] };
+  }
+
+  return null;
+}
+
+/* ---------------------------------------------------------
+   手動補全渲染
+--------------------------------------------------------- */
+function tryManualCompletion(text, overlay, aiSuggestionsRef) {
   const result = getManualCompletion(text);
   if (!result) return false;
 
-  // 1. 生命徵象 / 體重序列（連續補全）
+  // 1. 生命徵象 / 體重序列
   if (result.type === "sequence") {
     overlay.innerHTML = `
       <span style="color: transparent;">${text}</span>
       <span style="color: #ccc;">${result.data}</span>
     `;
-    aiSuggestions = [result.data];   // 只顯示下一個
-    activeIndex = 0;
+    aiSuggestionsRef.value = [result.data];
     return true;
   }
 
-  // 2. 多段句子（Admitted / 依醫囑給予）
-  if (result.type === "multi" && Array.isArray(result.data)) {
+  // 2. 多段句子
+  if (result.type === "multi") {
     overlay.innerHTML = `
       <span style="color: transparent;">${text}</span>
       <span style="color: #ccc;">${result.data[0]}</span>
     `;
-    aiSuggestions = result.data;     // 多個選項
-    activeIndex = 0;
+    aiSuggestionsRef.value = result.data;
     return true;
   }
 
-  // 3. 群組補全（張眼 / 語言 → 多模板）
-  if (result.type === "options" && result.data.templates) {
-    const first = result.data.templates[0];
-
+  // 3. 多模板（張眼 / 語言）
+  if (result.type === "multiTemplates") {
+    const first = result.data[0];
     let preview = first.template;
+
     if (first.options) {
       preview = preview.replace("{選項}", first.options.join(" / "));
     }
@@ -151,20 +188,18 @@ function tryManualCompletion(text) {
       <span style="color: #ccc;">${preview}</span>
     `;
 
-    // 把所有模板展開成可選項目
-    aiSuggestions = result.data.templates.map(t => {
+    aiSuggestionsRef.value = result.data.map(t => {
       if (t.options) {
         return t.template.replace("{選項}", t.options.join(" / "));
       }
       return t.template;
     });
 
-    activeIndex = 0;
     return true;
   }
 
-  // 4. 群組補全（單模板 + 選項）
-  if (result.type === "options" && result.data.template) {
+  // 4. 單模板 + 選項
+  if (result.type === "options") {
     const preview = result.data.template.replace("{選項}", result.data.options.join(" / "));
 
     overlay.innerHTML = `
@@ -172,8 +207,7 @@ function tryManualCompletion(text) {
       <span style="color: #ccc;">${preview}</span>
     `;
 
-    aiSuggestions = [preview];
-    activeIndex = 0;
+    aiSuggestionsRef.value = [preview];
     return true;
   }
 
@@ -199,33 +233,25 @@ export function initAISuggestion(textarea, overlay) {
     `;
   }
 
-  /* ---------------- 手動補全優先 ---------------- */
-  function tryManualCompletion(text) {
-    const result = getManualCompletion(text);
-    if (!result) return false;
+  /* ---------------- 事件：輸入 ---------------- */
+  textarea.addEventListener("input", () => {
+    clearTimeout(typingTimer);
 
-    if (result.type === "sequence") {
-      renderOverlay(text, result.data);
-      aiSuggestions = [text + result.data];
-      return true;
+    const text = textarea.value;
+    if (!text.trim()) {
+      overlay.innerHTML = "";
+      return;
     }
 
-    if (result.type === "multi") {
-      renderOverlay(text, result.data.join("\n"));
-      aiSuggestions = result.data;
-      return true;
+    // 手動補全優先
+    if (tryManualCompletion(text, overlay, { value: aiSuggestions })) {
+      activeIndex = 0;
+      return;
     }
 
-    if (result.type === "options") {
-      const opts = result.data.options.join(" / ");
-      const filled = result.data.template.replace("{選項}", opts);
-      renderOverlay(text, filled);
-      aiSuggestions = [filled];
-      return true;
-    }
-
-    return false;
-  }
+    // fallback → AI 補全
+    typingTimer = setTimeout(() => callAI(text), delay);
+  });
 
   /* ---------------- AI 補全 ---------------- */
   async function callAI(prompt) {
@@ -252,46 +278,29 @@ export function initAISuggestion(textarea, overlay) {
     isLoading = false;
   }
 
-  /* ---------------- 事件：輸入 ---------------- */
-  textarea.addEventListener("input", () => {
-    clearTimeout(typingTimer);
-
-    const text = textarea.value;
-    if (!text.trim()) {
-      overlay.innerHTML = "";
-      return;
-    }
-
-    // 手動補全優先
-    if (tryManualCompletion(text)) return;
-
-    // fallback → AI 補全
-    typingTimer = setTimeout(() => callAI(text), delay);
-  });
-
   /* ---------------- 事件：鍵盤 ---------------- */
   textarea.addEventListener("keydown", (e) => {
-  if (aiSuggestions.length === 0) return;
+    if (aiSuggestions.length === 0) return;
 
-  // 上下鍵切換選項
-  if (e.key === "ArrowDown") {
-    e.preventDefault();
-    activeIndex = (activeIndex + 1) % aiSuggestions.length;
-    renderOverlay(textarea.value, aiSuggestions[activeIndex]);
-  }
+    // 上下鍵切換選項
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      activeIndex = (activeIndex + 1) % aiSuggestions.length;
+      renderOverlay(textarea.value, aiSuggestions[activeIndex]);
+    }
 
-  if (e.key === "ArrowUp") {
-    e.preventDefault();
-    activeIndex = (activeIndex - 1 + aiSuggestions.length) % aiSuggestions.length;
-    renderOverlay(textarea.value, aiSuggestions[activeIndex]);
-  }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      activeIndex = (activeIndex - 1 + aiSuggestions.length) % aiSuggestions.length;
+      renderOverlay(textarea.value, aiSuggestions[activeIndex]);
+    }
 
-  // Tab 接受補全
-  if (e.key === "Tab") {
-    e.preventDefault();
-    const full = aiSuggestions[activeIndex];
-    textarea.value = full;
-    overlay.innerHTML = "";
-  }
-});
+    // Tab 接受補全
+    if (e.key === "Tab") {
+      e.preventDefault();
+      const full = aiSuggestions[activeIndex];
+      textarea.value = full;
+      overlay.innerHTML = "";
+    }
+  });
 }
