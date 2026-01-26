@@ -1,3 +1,16 @@
+function insertAtCursor(textarea, text) {
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+
+  const before = textarea.value.substring(0, start);
+  const after = textarea.value.substring(end);
+
+  textarea.value = before + text + after;
+
+  // 更新游標位置
+  const newPos = start + text.length;
+  textarea.selectionStart = textarea.selectionEnd = newPos;
+}
 import { apiFetch } from "./api.js";
 
 /* ---------------------------------------------------------
