@@ -144,7 +144,7 @@ const manualData = {
 // -------------------------------
 // 取得手動補全結果
 // -------------------------------
-function getManualCompletion(text) {
+export function getManualCompletion(text) {
   const last = getLastToken(text);
 
   // 1. 生命徵象：輸入 key 時給 template
@@ -187,7 +187,7 @@ function getManualCompletion(text) {
 // -------------------------------
 // 渲染手動補全 overlay
 // -------------------------------
-function renderManualCompletion(text, overlay, aiRef, result) {
+export function renderManualCompletion(text, overlay, aiRef, result) {
   // 1. 生命徵象 / 體重序列：單一 template
   if (result.type === "sequence") {
     overlay.innerHTML = `
@@ -264,7 +264,7 @@ function renderManualCompletion(text, overlay, aiRef, result) {
 // -------------------------------
 // Tab 接受後 → 自動跳下一個
 // -------------------------------
-function handleAfterManualAccept(textarea, overlay, aiRef) {
+export function handleAfterManualAccept(textarea, overlay, aiRef) {
   const full = aiRef.value[aiRef.activeIndex] || "";
   const meta = aiRef.meta || {};
 
