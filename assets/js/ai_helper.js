@@ -487,19 +487,19 @@ export function initAISuggestion(textarea, overlay) {
 
     // Tab 接受補全
     if (e.key === "Tab") {
-      e.preventDefault();
-      const full = aiRef.value[aiRef.activeIndex];
-      textarea.value = full;
-      overlay.innerHTML = "";
-
-      // 如果是手動補全（非 AI），接受後啟動「自動跳下一個」
-      if (aiRef.meta && aiRef.meta.kind !== "ai") {
-        handleAfterManualAccept(textarea, overlay, aiRef);
-      } else {
-        // AI 補全就結束
-        aiRef.value = [];
-        aiRef.meta = null;
+        e.preventDefault();
+        const full = aiRef.value[aiRef.activeIndex];
+      
+        insertAtCursor(textarea, full);
+        overlay.innerHTML = "";
+      
+        // 手動補全 → 啟動自動跳下一個
+        if (aiRef.meta && aiRef.meta.kind !== "ai") {
+          handleAfterManualAccept(textarea, overlay, aiRef);
+        } else {
+          aiRef.value = [];
+          aiRef.meta = null;
+        }
       }
-    }
   });
 }
