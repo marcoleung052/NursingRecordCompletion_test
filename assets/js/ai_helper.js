@@ -12,7 +12,11 @@ export function initAISuggestion(textarea, overlay) {
   let typingTimer = null;
   const delay = 800;
 
-  function renderOverlay(prefix, suffix) {
+  function renderOverlay(prefix, full) {
+    const suffix = full.startsWith(prefix)
+      ? full.slice(prefix.length)
+      : full;
+  
     overlay.innerHTML = `
       <span style="color: transparent;">${prefix}</span>
       <span style="color: #ccc;">${suffix}</span>
