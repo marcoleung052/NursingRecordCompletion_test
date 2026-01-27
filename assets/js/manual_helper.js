@@ -28,22 +28,21 @@ export function insertAtCursor(textarea, text, triggerLength = 0) {
 const manualData = {
   // 1. 生命徵象（固定順序）
   vitalSignsSequence: [
-    { key: "BT:", template: "BT: " },
-    { key: "PULSE:", template: "PULSE: " },
-    { key: "RESP:", template: "RESP: " },
-    { key: "NBPs:", template: "NBPs: " },
-    { key: "BPd:", template: "BPd: " },
-    { key: "HR:", template: "HR: " },
-    { key: "OXIMETER:", template: "OXIMETER: " },
-    { key: "SpO2:", template: "SpO2: " },
-    { key: "RR:", template: "RR: " },
-    { key: "ABPs:", template: "ABPs: " },
-    { key: "ABPd:", template: "ABPd: " }
+    { key: "BT:", template: "PULSE: " },
+    { key: "PULSE:", template: "RESP: " },
+    { key: "RESP:", template: "NBPs: " },
+    { key: "NBPs:", template: "BPd: " },
+    { key: "BPd:", template: "HR: " },
+    { key: "HR:", template: "OXIMETER: " },
+    { key: "OXIMETER:", template: "SpO2: " },
+    { key: "SpO2:", template: "RR: " },
+    { key: "RR:", template: "ABPs:  " },
+    { key: "ABPs:", template: "ABPd: " }
   ],
 
   // 2. Admitted 多階段
   admittedSteps: [
-    "Admitted at xx:xx，入院護理已完成。",
+    " at xx:xx，入院護理已完成。",
     "簡訊通知 醫師，新病人已入院。",
     "/；由轉送人員協助轉送病人返室"
   ],
@@ -54,10 +53,10 @@ const manualData = {
       type: "multi",
       templates: [
         {
-          template: "張眼：x 分 ({選項})",
+          template: " 分 ({選項})",
           options: ["Spontaneous", "none", "to speech", "to pain"]
         },
-        { template: "張眼：眼睛緊閉" }
+        { template: "眼睛緊閉" }
       ]
     },
     語言: {
@@ -105,7 +104,7 @@ const manualData = {
 
   // 4. 體重 / BMI 序列
   weightSequence: [
-    { key: "體重", template: "體重：xx.x KG" },
+    { key: "體重", template: "：xx.x KG" },
     { key: "身高", template: "身高： CM" },
     { key: "BMI", template: "BMI 值：{bmi}" },
     { key: "BMI結果", template: "BMI 結果：{bmiResult}" }
@@ -126,7 +125,7 @@ const manualData = {
   doctorOrderPairs: [
     {
       trigger: "依醫囑給予",
-      first: "依醫囑給予 xxx，",
+      first: " xxx，",
       seconds: [
         "告知藥物作用、副作用、教導注意事項，續觀察有無不適反應。",
         "止痛藥品，持續追蹤疼痛緩解情形，未緩解則通知醫師。"
@@ -139,13 +138,13 @@ const manualData = {
     },
     {
       trigger: "目前使用自備藥",
-      first: "目前使用自備藥",
-      seconds: ["，藥籤或系統標註【跌】字用藥。"]
+      first: "，藥籤或系統標註【跌】字用藥。",
+      seconds: []
     },
     {
       trigger: "（藥）",
-      first: "（藥）",
-      seconds: ["自費使用"]
+      first: "自費使用",
+      seconds: []
     }
   ]
 };
