@@ -8,13 +8,17 @@ function getLastToken(text) {
 }
 
 // 插入文字到游標位置
-export function insertAtCursor(textarea, text) {
+export function insertAtCursor(textarea, text, triggerLength = 0) {
   const start = textarea.selectionStart;
   const end = textarea.selectionEnd;
-  const before = textarea.value.substring(0, start);
+
+  // 刪掉觸發字
+  const before = textarea.value.substring(0, start - triggerLength);
   const after = textarea.value.substring(end);
+
   textarea.value = before + text + after;
-  const newPos = start + text.length;
+
+  const newPos = before.length + text.length;
   textarea.selectionStart = textarea.selectionEnd = newPos;
 }
 
