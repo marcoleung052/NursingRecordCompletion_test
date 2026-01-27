@@ -61,11 +61,8 @@ export const gcsOptions = {
   ]
 };
 
-export const gcsOrder = ["張眼", "語言", "運動"];
+export const admittedFirst = "Admitted at xx:xx，入院護理已完成。";
 
-// ===============================
-// Admitted（多選項 + 分支 + 連續補全）
-// ===============================
 export const admittedOptions = [
   "簡訊通知醫師，新病人已入院。",
   "/；由轉送人員協助轉送病人返室"
@@ -75,9 +72,34 @@ export const admittedFollowUp = {
   "簡訊通知醫師，新病人已入院。": "/；由轉送人員協助轉送病人返室"
 };
 
-// ===============================
-// 其他欄位（自動解析 "/" → 多選項）
-// ===============================
+export const customFieldOrder = [
+  "肌肉張力左上肢",
+  "肌肉張力左下肢",
+  "肌肉張力右上肢",
+  "肌肉張力右下肢",
+  "活動力",
+  "脈律",
+  "呼吸道",
+  "呼吸音",
+  "呼吸速率",
+  "呼吸型態",
+  "腹部",
+  "腸蠕動音",
+  "體重",
+  "身高",
+  "大便次數(昨日)",
+  "大便型態",
+  "大便顏色",
+  "排尿情況",
+  "皮膚溫度",
+  "皮膚顏色",
+  "皮膚完整性",
+  "皮膚病灶",
+  "水腫級數",
+  "壓瘡",
+  "痰量"
+];
+
 export const customFields = {
   "肌肉張力左上肢": "muscle power = x/無法測量",
   "肌肉張力左下肢": "muscle power = x/無法測量",
@@ -105,24 +127,23 @@ export const customFields = {
   "壓瘡": "無",
   "痰量": "無"
 };
-
 // ===============================
 // 主邏輯：取得手動補全
 // ===============================
 export function getManualCompletion(text) {
   const last = getLastToken(text);
 
-  // 生命徵象（連續補全）
-  const idx = vitalSignsSequence.indexOf(last);
-  if (idx !== -1 && idx < vitalSignsSequence.length - 1) {
+  // 生命徵象
+  const vsIndex = vitalSignsSequence.indexOf(last);
+  if (vsIndex !== -1 && vsIndex < vitalSignsSequence.length - 1) {
     return {
-      kind: "vitalSeq",
-      step: idx + 1,
-      options: [vitalSignsSequence[idx + 1]]
+      kind: "vital",
+      step: vsIndex + 1,
+      options: [vitalSignsSequence[vsIndex + 1]]
     };
   }
 
-  // GCS（多選項 + 連續補全）
+  // GCS
   if (gcsOptions[last]) {
     return {
       kind: "gcs",
@@ -131,26 +152,35 @@ export function getManualCompletion(text) {
     };
   }
 
-  // Admitted（多選項）
+  // Admitted
   if (last === "Admitted") {
     return {
-      kind: "admitted",
+      kind: "admittedFirst",
+      options: [admittedFirst]
+    };
+  }
+
+  if (last === admittedFirst) {
+    return {
+      kind: "admittedChoice",
       options: admittedOptions
     };
   }
 
-  // 其他欄位（自動解析 "/"）
-  if (customFields[last]) {
+  // customFields
+  if (customFields[last] !== undefined) {
     const raw = customFields[last];
 
     if (raw.includes("/")) {
       return {
         kind: "customOptions",
+        step: customFieldOrder.indexOf(last),
         options: raw.split("/")
       };
     } else {
       return {
         kind: "customInput",
+        step: customFieldOrder.indexOf(last),
         insert: `${last}：`
       };
     }
@@ -158,89 +188,97 @@ export function getManualCompletion(text) {
 
   return null;
 }
-
-// ===============================
-// 顯示補全 overlay
-// ===============================
 export function renderManualCompletion(text, overlay, aiRef, result) {
   aiRef.value = result.options || [result.insert];
   aiRef.meta = result;
   aiRef.activeIndex = 0;
 
-  const suffix = aiRef.value[0];
-
   overlay.innerHTML = `
     <span style="color: transparent;">${text}</span>
-    <span style="color: #ccc;">${suffix}</span>
+    <span style="color: #ccc;">${aiRef.value[0]}</span>
   `;
 }
-
-// ===============================
-// Tab 接受後 → 自動跳下一個
-// ===============================
 export function handleAfterManualAccept(textarea, overlay, aiRef) {
   const meta = aiRef.meta;
   if (!meta) return;
 
-  // 生命徵象連續補全
-  if (meta.kind === "vitalSeq") {
+  // 生命徵象
+  if (meta.kind === "vital") {
     const next = vitalSignsSequence[meta.step + 1];
-    if (!next) {
-      aiRef.value = [];
-      aiRef.meta = null;
-      return;
-    }
-
-    aiRef.value = [next];
-    aiRef.meta = { kind: "vitalSeq", step: meta.step + 1 };
-    overlay.innerHTML = `
-      <span style="color: transparent;">${textarea.value}</span>
-      <span style="color: #ccc;">${next}</span>
-    `;
-    return;
+    if (!next) return clear(aiRef);
+    return showNext(textarea, overlay, aiRef, {
+      kind: "vital",
+      step: meta.step + 1,
+      options: [next]
+    });
   }
 
-  // GCS 連續補全
+  // GCS
   if (meta.kind === "gcs") {
-    const nextStep = meta.step + 1;
-    const nextTrigger = gcsOrder[nextStep];
-
-    if (!nextTrigger) {
-      aiRef.value = [];
-      aiRef.meta = null;
-      return;
-    }
-
-    aiRef.value = gcsOptions[nextTrigger];
-    aiRef.meta = { kind: "gcs", step: nextStep };
-    overlay.innerHTML = `
-      <span style="color: transparent;">${textarea.value}</span>
-      <span style="color: #ccc;">${aiRef.value[0]}</span>
-    `;
-    return;
+    const nextTrigger = gcsOrder[meta.step + 1];
+    if (!nextTrigger) return clear(aiRef);
+    return showNext(textarea, overlay, aiRef, {
+      kind: "gcs",
+      step: meta.step + 1,
+      options: gcsOptions[nextTrigger]
+    });
   }
 
-  // Admitted 分支補全
-  if (meta.kind === "admitted") {
+  // Admitted
+  if (meta.kind === "admittedFirst") {
+    return showNext(textarea, overlay, aiRef, {
+      kind: "admittedChoice",
+      options: admittedOptions
+    });
+  }
+
+  if (meta.kind === "admittedChoice") {
     const chosen = aiRef.value[aiRef.activeIndex];
     const follow = admittedFollowUp[chosen];
-
-    if (!follow) {
-      aiRef.value = [];
-      aiRef.meta = null;
-      return;
-    }
-
-    aiRef.value = [follow];
-    aiRef.meta = { kind: "admittedDone" };
-    overlay.innerHTML = `
-      <span style="color: transparent;">${textarea.value}</span>
-      <span style="color: #ccc;">${follow}</span>
-    `;
-    return;
+    if (!follow) return clear(aiRef);
+    return showNext(textarea, overlay, aiRef, {
+      kind: "admittedDone",
+      options: [follow]
+    });
   }
 
-  // 其他欄位 → 結束
+  // customFields
+  if (meta.kind === "customOptions" || meta.kind === "customInput") {
+    const nextField = customFieldOrder[meta.step + 1];
+    if (!nextField) return clear(aiRef);
+
+    const raw = customFields[nextField];
+
+    if (raw.includes("/")) {
+      return showNext(textarea, overlay, aiRef, {
+        kind: "customOptions",
+        step: meta.step + 1,
+        options: raw.split("/")
+      });
+    } else {
+      return showNext(textarea, overlay, aiRef, {
+        kind: "customInput",
+        step: meta.step + 1,
+        options: [`${nextField}：`]
+      });
+    }
+  }
+
+  clear(aiRef);
+}
+
+function showNext(textarea, overlay, aiRef, meta) {
+  aiRef.value = meta.options;
+  aiRef.meta = meta;
+  aiRef.activeIndex = 0;
+
+  overlay.innerHTML = `
+    <span style="color: transparent;">${textarea.value}</span>
+    <span style="color: #ccc;">${aiRef.value[0]}</span>
+  `;
+}
+
+function clear(aiRef) {
   aiRef.value = [];
   aiRef.meta = null;
 }
