@@ -135,7 +135,7 @@ export const customFields = {
 export function getManualCompletion(text) {
   const last = getLastToken(text);
 
-  // 生命徵象
+  // Vital Signs
   const vsIndex = vitalSignsSequence.indexOf(last);
   if (vsIndex !== -1 && vsIndex < vitalSignsSequence.length - 1) {
     return {
@@ -177,12 +177,14 @@ export function getManualCompletion(text) {
       return {
         kind: "customOptions",
         step: customFieldOrder.indexOf(last),
+        field: last,
         options: raw.split("/")
       };
     } else {
       return {
         kind: "customInput",
         step: customFieldOrder.indexOf(last),
+        field: last,
         insert: `${last}：`
       };
     }
@@ -190,6 +192,7 @@ export function getManualCompletion(text) {
 
   return null;
 }
+
 export function renderManualCompletion(text, overlay, aiRef, result) {
   aiRef.value = result.options || [result.insert];
   aiRef.meta = result;
@@ -204,7 +207,7 @@ export function handleAfterManualAccept(textarea, overlay, aiRef) {
   const meta = aiRef.meta;
   if (!meta) return;
 
-  // 生命徵象
+  // Vital Signs
   if (meta.kind === "vital") {
     const next = vitalSignsSequence[meta.step + 1];
     if (!next) return clear(aiRef);
@@ -255,12 +258,14 @@ export function handleAfterManualAccept(textarea, overlay, aiRef) {
       return showNext(textarea, overlay, aiRef, {
         kind: "customOptions",
         step: meta.step + 1,
-        options: raw.split("/")
+        field: nextField,
+        options: raw.split("/").map(opt => `${nextField}：${opt}`)
       });
     } else {
       return showNext(textarea, overlay, aiRef, {
         kind: "customInput",
         step: meta.step + 1,
+        field: nextField,
         options: [`${nextField}：`]
       });
     }
