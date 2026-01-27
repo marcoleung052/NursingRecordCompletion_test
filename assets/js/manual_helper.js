@@ -36,12 +36,18 @@ export const vitalSignsSequence = [
 ];
 
 // ===============================
-// GCS
+// GCS（連續補全）
 // ===============================
-export const gcsMap = {
-  "張眼": "張眼：x 分 (Spontaneous / none / to speech / to pain)",
-  "語言": "語言：x 分 (alert / confused / none / groans / drowsy)",
-  "運動": "運動：x 分 (obeys / localized pain / withdrawl)"
+export const gcsSequence = [
+  "張眼：x 分 (Spontaneous / none / to speech / to pain)",
+  "語言：x 分 (alert / confused / none / groans / drowsy)",
+  "運動：x 分 (obeys / localized pain / withdrawl)"
+];
+
+const gcsTriggerMap = {
+  "張眼": 0,
+  "語言": 1,
+  "運動": 2
 };
 
 // ===============================
@@ -64,15 +70,18 @@ export function getManualCompletion(text) {
   if (idx !== -1 && idx < vitalSignsSequence.length - 1) {
     return {
       kind: "vitalSigns",
+      step: idx,
       next: vitalSignsSequence[idx + 1]
     };
   }
 
-  // GCS
-  if (gcsMap[last]) {
+  // GCS 連續補全
+  if (gcsTriggerMap[last] !== undefined) {
+    const step = gcsTriggerMap[last];
     return {
-      kind: "gcs",
-      next: gcsMap[last]
+      kind: "gcsSeq",
+      step,
+      next: gcsSequence[step]
     };
   }
 
@@ -115,16 +124,32 @@ export function handleAfterManualAccept(textarea, overlay, aiRef) {
     return;
   }
 
-  // GCS：不連續觸發
-  if (meta.kind === "gcs") {
-    aiRef.value = [];
-    aiRef.meta = null;
+  // GCS 連續補全
+  if (meta.kind === "gcsSeq") {
+    const nextStep = meta.step + 1;
+
+    if (nextStep >= gcsSequence.length) {
+      aiRef.value = [];
+      aiRef.meta = null;
+      return;
+    }
+
+    const nextText = gcsSequence[nextStep];
+
+    aiRef.value = [nextText];
+    aiRef.meta = { kind: "gcsSeq", step: nextStep };
+
+    overlay.innerHTML = `
+      <span style="color: transparent;">${textarea.value}</span>
+      <span style="color: #ccc;">${nextText}</span>
+    `;
     return;
   }
 
   // Admitted 多步驟
   if (meta.kind === "admitted") {
     const nextStep = meta.step + 1;
+
     if (nextStep >= admittedSteps.length) {
       aiRef.value = [];
       aiRef.meta = null;
@@ -132,6 +157,7 @@ export function handleAfterManualAccept(textarea, overlay, aiRef) {
     }
 
     const nextText = admittedSteps[nextStep];
+
     aiRef.value = [nextText];
     aiRef.meta = { kind: "admitted", step: nextStep };
 
@@ -139,5 +165,6 @@ export function handleAfterManualAccept(textarea, overlay, aiRef) {
       <span style="color: transparent;">${textarea.value}</span>
       <span style="color: #ccc;">${nextText}</span>
     `;
+    return;
   }
 }
