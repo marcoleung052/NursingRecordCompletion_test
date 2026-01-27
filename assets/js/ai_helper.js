@@ -85,30 +85,26 @@ export function initAISuggestion(textarea, overlay) {
 
     if (e.key === "Tab") {
       e.preventDefault();
-      const full = aiRef.value[aiRef.activeIndex];
-      // ⭐ 取得觸發字（最後一個 token）
-      const trigger = textarea.value.split(/[\s\n]/).pop();
-      // ⭐ 刪掉觸發字
-      const start = textarea.selectionStart;
-    const before = textarea.value.slice(0, start - trigger.length);
-    const after = textarea.value.slice(start);
     
-    textarea.value = before + full + after;
-
-    // ⭐ 更新游標位置
-    const newPos = before.length + full.length;
-    textarea.selectionStart = textarea.selectionEnd = newPos;
-
-    overlay.innerHTML = "";
-
-    // ⭐ 手動補全 → 自動跳下一個
-    if (aiRef.meta && aiRef.meta.kind !== "ai") {
-      handleAfterManualAccept(textarea, overlay, aiRef);
-    } else {
-      aiRef.value = [];
-      aiRef.meta = null;
+      const full = aiRef.value[aiRef.activeIndex];   // 例如 "BT: 36.5°C，無發燒現象。"
+      const text = textarea.value;
+      const trigger = text.split(/[\s\n]/).pop();     // 例如 "BT:"
+    
+      // ⭐ 只插入「去掉觸發字之後的部分」
+      const toInsert = full.startsWith(trigger)
+        ? full.slice(trigger.length)   // " 36.5°C，無發燒現象。"
+        : full;                        // 保險：萬一沒對齊就整句插
+    
+      insertAtCursor(textarea, toInsert);
+      overlay.innerHTML = "";
+    
+      if (aiRef.meta && aiRef.meta.kind !== "ai") {
+        handleAfterManualAccept(textarea, overlay, aiRef);
+      } else {
+        aiRef.value = [];
+        aiRef.meta = null;
+      }
     }
 
-    }
   });
 }
