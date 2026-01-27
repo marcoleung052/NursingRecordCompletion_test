@@ -38,6 +38,8 @@ export const vitalSignsSequence = [
 // ===============================
 // GCS（多選項 + 連續補全）
 // ===============================
+export const gcsOrder = ["張眼", "語言", "運動"];
+
 export const gcsOptions = {
   "張眼": [
     "張眼：x分(Spontaneous)",
