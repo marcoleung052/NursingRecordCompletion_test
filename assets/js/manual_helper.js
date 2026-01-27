@@ -2,6 +2,11 @@
 // manual_helper.js
 // ===============================
 
+// 取得最後一個 token
+function getLastToken(text) {
+  return text.split(/[\s\n]/).pop();
+}
+
 // 插入文字到游標位置
 export function insertAtCursor(textarea, text) {
   const start = textarea.selectionStart;
