@@ -178,17 +178,17 @@ export function getManualCompletion(text) {
         kind: "customOptions",
         step: customFieldOrder.indexOf(last),
         field: last,
-        options: raw.split("/")
+        options: raw.split("/").map(opt => `${last}：${opt}`)
       };
     } else {
       return {
-        kind: "customInput",
+        kind: "customFixed",
         step: customFieldOrder.indexOf(last),
         field: last,
-        insert: `${last}：`
+        insert: `${last}：${raw}`
       };
     }
-  }
+}
 
   return null;
 }
@@ -247,8 +247,8 @@ export function handleAfterManualAccept(textarea, overlay, aiRef) {
     });
   }
 
-  // customFields
-  if (meta.kind === "customOptions" || meta.kind === "customInput") {
+  // customFields — 多選項
+  if (meta.kind === "customOptions") {
     const nextField = customFieldOrder[meta.step + 1];
     if (!nextField) return clear(aiRef);
 
@@ -263,10 +263,34 @@ export function handleAfterManualAccept(textarea, overlay, aiRef) {
       });
     } else {
       return showNext(textarea, overlay, aiRef, {
-        kind: "customInput",
+        kind: "customFixed",
         step: meta.step + 1,
         field: nextField,
-        options: [`${nextField}：`]
+        options: [`${nextField}：${raw}`]
+      });
+    }
+  }
+
+  // customFields — 固定輸出
+  if (meta.kind === "customFixed") {
+    const nextField = customFieldOrder[meta.step + 1];
+    if (!nextField) return clear(aiRef);
+
+    const raw = customFields[nextField];
+
+    if (raw.includes("/")) {
+      return showNext(textarea, overlay, aiRef, {
+        kind: "customOptions",
+        step: meta.step + 1,
+        field: nextField,
+        options: raw.split("/").map(opt => `${nextField}：${opt}`)
+      });
+    } else {
+      return showNext(textarea, overlay, aiRef, {
+        kind: "customFixed",
+        step: meta.step + 1,
+        field: nextField,
+        options: [`${nextField}：${raw}`]
       });
     }
   }
