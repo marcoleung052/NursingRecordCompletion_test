@@ -65,14 +65,17 @@ export const admittedSteps = [
 export function getManualCompletion(text) {
   const last = getLastToken(text);
 
-  // 生命徵象序列
+  // 生命徵象序列（連續補全）
   const idx = vitalSignsSequence.indexOf(last);
-  if (idx !== -1 && idx < vitalSignsSequence.length - 1) {
-    return {
-      kind: "vitalSigns",
-      step: idx,
-      next: vitalSignsSequence[idx + 1]
-    };
+  if (idx !== -1) {
+    const nextStep = idx + 1;
+    if (nextStep < vitalSignsSequence.length) {
+      return {
+        kind: "vitalSignsSeq",
+        step: nextStep,
+        next: vitalSignsSequence[nextStep]
+      };
+    }
   }
 
   // GCS 連續補全
@@ -117,10 +120,25 @@ export function handleAfterManualAccept(textarea, overlay, aiRef) {
   const meta = aiRef.meta;
   if (!meta) return;
 
-  // 生命徵象：不連續觸發，只補一次
-  if (meta.kind === "vitalSigns") {
-    aiRef.value = [];
-    aiRef.meta = null;
+  // 生命徵象連續補全
+  if (meta.kind === "vitalSignsSeq") {
+    const nextStep = meta.step + 1;
+
+    if (nextStep >= vitalSignsSequence.length) {
+      aiRef.value = [];
+      aiRef.meta = null;
+      return;
+    }
+
+    const nextText = vitalSignsSequence[nextStep];
+
+    aiRef.value = [nextText];
+    aiRef.meta = { kind: "vitalSignsSeq", step: nextStep };
+
+    overlay.innerHTML = `
+      <span style="color: transparent;">${textarea.value}</span>
+      <span style="color: #ccc;">${nextText}</span>
+    `;
     return;
   }
 
