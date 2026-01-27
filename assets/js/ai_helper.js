@@ -86,16 +86,29 @@ export function initAISuggestion(textarea, overlay) {
     if (e.key === "Tab") {
       e.preventDefault();
       const full = aiRef.value[aiRef.activeIndex];
+      // ⭐ 取得觸發字（最後一個 token）
+      const trigger = textarea.value.split(/[\s\n]/).pop();
+      // ⭐ 刪掉觸發字
+      const start = textarea.selectionStart;
+    const before = textarea.value.slice(0, start - trigger.length);
+    const after = textarea.value.slice(start);
+    
+    textarea.value = before + full + after;
 
-      insertAtCursor(textarea, full);
-      overlay.innerHTML = "";
+    // ⭐ 更新游標位置
+    const newPos = before.length + full.length;
+    textarea.selectionStart = textarea.selectionEnd = newPos;
 
-      if (aiRef.meta && aiRef.meta.kind !== "ai") {
-        handleAfterManualAccept(textarea, overlay, aiRef);
-      } else {
-        aiRef.value = [];
-        aiRef.meta = null;
-      }
+    overlay.innerHTML = "";
+
+    // ⭐ 手動補全 → 自動跳下一個
+    if (aiRef.meta && aiRef.meta.kind !== "ai") {
+      handleAfterManualAccept(textarea, overlay, aiRef);
+    } else {
+      aiRef.value = [];
+      aiRef.meta = null;
+    }
+
     }
   });
 }
