@@ -185,16 +185,16 @@ export function getManualCompletion(text) {
         kind: "customFixed",
         step: customFieldOrder.indexOf(last),
         field: last,
-        insert: `${last}：${raw}`
+        options: [`${last}：${raw}`]
       };
     }
-}
+  }
 
   return null;
 }
 
 export function renderManualCompletion(text, overlay, aiRef, result) {
-  aiRef.value = result.options || [result.insert];
+  aiRef.value = result.options;
   aiRef.meta = result;
   aiRef.activeIndex = 0;
 
