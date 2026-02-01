@@ -68,10 +68,11 @@ export function initAISuggestion(textarea, overlay) {
     // ---------------------------
     if (skill.type === "trigger-prefix") {
       aiRef.full = skill.full;
+      aiRef.options = [skill.full];   // ⭐⭐ 這行最重要
+      aiRef.activeIndex = 0;
       renderOverlay(prompt, aiRef.full);
       return;
     }
-
 
     // ---------------------------
     // fixed-sequence → prefix 補全
