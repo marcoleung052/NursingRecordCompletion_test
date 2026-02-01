@@ -1,22 +1,17 @@
-import { 
-  getManualCompletion,
-  renderManualCompletion,
-  handleAfterManualAccept,
-  insertAtCursor
-} from "./manual_helper.js";
-
 import { apiFetch } from "./api.js";
 
 export function initAISuggestion(textarea, overlay) {
-  const aiRef = { value: [], activeIndex: 0, meta: null };
+  const aiRef = { value: [], activeIndex: 0 };
   let typingTimer = null;
-  const delay = 800;
+
+  // ⭐ 前端 debounce：0.1 秒
+  const FRONTEND_DELAY = 100;
 
   function renderOverlay(prefix, full) {
     const suffix = full.startsWith(prefix)
       ? full.slice(prefix.length)
       : full;
-  
+
     overlay.innerHTML = `
       <span style="color: transparent;">${prefix}</span>
       <span style="color: #ccc;">${suffix}</span>
@@ -24,7 +19,7 @@ export function initAISuggestion(textarea, overlay) {
   }
 
   // ---------------------------
-  // input：先手動 → 再 AI
+  // input：直接 AI 補全（無手動）
   // ---------------------------
   textarea.addEventListener("input", () => {
     clearTimeout(typingTimer);
@@ -33,20 +28,10 @@ export function initAISuggestion(textarea, overlay) {
     if (!text.trim()) {
       overlay.innerHTML = "";
       aiRef.value = [];
-      aiRef.meta = null;
       return;
     }
 
-    // ⭐ 先手動補全
-    const manualResult = getManualCompletion(text);
-    if (manualResult) {
-      renderManualCompletion(text, overlay, aiRef, manualResult);
-      aiRef.activeIndex = 0;
-      return;   // ⭐ 不符合手動才會跑 AI
-    }
-
-    // ⭐ fallback → AI 補全
-    typingTimer = setTimeout(() => callAI(text), delay);
+    typingTimer = setTimeout(() => callAI(text), FRONTEND_DELAY);
   });
 
   // ---------------------------
@@ -62,7 +47,6 @@ export function initAISuggestion(textarea, overlay) {
 
     aiRef.value = res.completions || [];
     aiRef.activeIndex = 0;
-    aiRef.meta = { kind: "ai" };
 
     const full = aiRef.value[0] || prompt;
     const suffix = full.slice(prompt.length);
@@ -89,26 +73,32 @@ export function initAISuggestion(textarea, overlay) {
 
     if (e.key === "Tab") {
       e.preventDefault();
-    
-      const full = aiRef.value[aiRef.activeIndex];   // 例如 "BT: 36.5°C，無發燒現象。"
+
+      const full = aiRef.value[aiRef.activeIndex];
       const text = textarea.value;
-      const trigger = text.split(/[\s\n]/).pop();     // 例如 "BT:"
-    
-      // ⭐ 只插入「去掉觸發字之後的部分」
+      const trigger = text.split(/[\s\n]/).pop();
+
       const toInsert = full.startsWith(trigger)
-        ? full.slice(trigger.length)   // " 36.5°C，無發燒現象。"
-        : full;                        // 保險：萬一沒對齊就整句插
-    
+        ? full.slice(trigger.length)
+        : full;
+
       insertAtCursor(textarea, toInsert);
       overlay.innerHTML = "";
-    
-      if (aiRef.meta && aiRef.meta.kind !== "ai") {
-        handleAfterManualAccept(textarea, overlay, aiRef);
-      } else {
-        aiRef.value = [];
-        aiRef.meta = null;
-      }
-    }
 
+      aiRef.value = [];
+    }
   });
+}
+
+// ⭐ 內建 insertAtCursor（不再依賴 manual_helper.js）
+function insertAtCursor(textarea, text) {
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const before = textarea.value.substring(0, start);
+  const after = textarea.value.substring(end);
+
+  textarea.value = before + text + after;
+
+  const newPos = start + text.length;
+  textarea.selectionStart = textarea.selectionEnd = newPos;
 }
