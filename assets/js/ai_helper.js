@@ -50,7 +50,7 @@ export function initAISuggestion(textarea, overlay) {
       body: JSON.stringify({ prompt })
     });
 
-    const skill = res.completions; // 後端回傳 dict
+    const skill = res.completions[0]; // 後端回傳 dict
 
     aiRef.type = skill.type;
 
