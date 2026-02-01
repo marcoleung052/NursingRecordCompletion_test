@@ -7,7 +7,8 @@ export function initAISuggestion(textarea, overlay) {
     steps: null,
     stepIndex: 0,
     options: [],
-    activeIndex: 0
+    activeIndex: 0,
+    results: [] 
   };
 
   let typingTimer = null;
@@ -212,5 +213,6 @@ export function initAISuggestion(textarea, overlay) {
     aiRef.stepIndex = 0;
     aiRef.options = [];
     aiRef.activeIndex = 0;
+    aiRef.results = [];
   }
 }
