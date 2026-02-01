@@ -20,7 +20,7 @@ export function initAISuggestion(textarea, overlay) {
       : full;
 
     overlay.innerHTML = `
-      <span style="color: #aaa;">${prefix}</span>
+      <span style="color: transparent;">${prefix}</span>
       <span style="color: #ccc;">${suffix}</span>
     `;
   }
