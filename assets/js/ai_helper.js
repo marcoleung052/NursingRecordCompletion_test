@@ -163,8 +163,7 @@ export function initAISuggestion(textarea, overlay) {
       // multi-step-options → 本地 stepIndex 推進
       // ---------------------------
       if (aiRef.type === "multi-step-options") {
-        aiRef.results.push(aiRef.full);
-
+        aiRef.results.push(toInsert);
         aiRef.stepIndex++;
 
         if (aiRef.stepIndex < aiRef.steps.length) {
