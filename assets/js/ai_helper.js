@@ -2,15 +2,15 @@ import { apiFetch } from "./api.js";
 
 export function initAISuggestion(textarea, overlay) {
   const aiRef = {
-    type: null,        // skill type
-    steps: null,       // for multi-step-options
-    stepIndex: 0,      // current step
-    options: [],       // current options
-    activeIndex: 0     // highlight index
+    type: null,
+    steps: null,
+    stepIndex: 0,
+    options: [],
+    activeIndex: 0
   };
 
   let typingTimer = null;
-  const FRONTEND_DELAY = 100; // 0.1 秒 debounce
+  const FRONTEND_DELAY = 100;
 
   function renderOverlay(prefix, full) {
     const suffix = full.startsWith(prefix)
@@ -23,9 +23,6 @@ export function initAISuggestion(textarea, overlay) {
     `;
   }
 
-  // ---------------------------
-  // input：呼叫後端 agent
-  // ---------------------------
   textarea.addEventListener("input", () => {
     clearTimeout(typingTimer);
 
@@ -39,9 +36,6 @@ export function initAISuggestion(textarea, overlay) {
     typingTimer = setTimeout(() => callAI(text), FRONTEND_DELAY);
   });
 
-  // ---------------------------
-  // 呼叫後端 API
-  // ---------------------------
   async function callAI(prompt) {
     renderOverlay(prompt, "(正在補全…)");
 
@@ -50,24 +44,21 @@ export function initAISuggestion(textarea, overlay) {
       body: JSON.stringify({ prompt })
     });
 
-    const skill = res.completions[0]; // 後端回傳 dict
-
+    const skill = res.completions[0];
     aiRef.type = skill.type;
 
     // ---------------------------
-    // TYPE: ai-multi-options
+    // fixed-sequence → prefix 補全
     // ---------------------------
-    if (skill.type === "ai-multi-options") {
-      aiRef.options = skill.options;
-      aiRef.activeIndex = 0;
-
-      const full = aiRef.options[0] || prompt;
-      renderOverlay(prompt, full.slice(prompt.length));
+    if (skill.type === "fixed-sequence") {
+      const full = skill.text;
+      renderOverlay(prompt, full);
+      aiRef.options = [full];
       return;
     }
 
     // ---------------------------
-    // TYPE: multi-options
+    // multi-options → prefix 補全
     // ---------------------------
     if (skill.type === "multi-options") {
       aiRef.options = skill.options;
@@ -79,17 +70,7 @@ export function initAISuggestion(textarea, overlay) {
     }
 
     // ---------------------------
-    // TYPE: fixed-sequence
-    // ---------------------------
-    if (skill.type === "fixed-sequence") {
-      insertAtCursor(textarea, skill.text);
-      overlay.innerHTML = "";
-      resetAI();
-      return;
-    }
-
-    // ---------------------------
-    // TYPE: multi-step-options
+    // multi-step-options
     // ---------------------------
     if (skill.type === "multi-step-options") {
       aiRef.steps = skill.steps;
@@ -101,15 +82,23 @@ export function initAISuggestion(textarea, overlay) {
       renderOverlay(prompt, full);
       return;
     }
+
+    // ---------------------------
+    // ai-multi-options
+    // ---------------------------
+    if (skill.type === "ai-multi-options") {
+      aiRef.options = skill.options;
+      aiRef.activeIndex = 0;
+
+      const full = aiRef.options[0];
+      renderOverlay(prompt, full);
+      return;
+    }
   }
 
-  // ---------------------------
-  // keydown：上下鍵 + Tab
-  // ---------------------------
   textarea.addEventListener("keydown", (e) => {
     if (!aiRef.options || aiRef.options.length === 0) return;
 
-    // 上下鍵切換候選
     if (e.key === "ArrowDown") {
       e.preventDefault();
       aiRef.activeIndex = (aiRef.activeIndex + 1) % aiRef.options.length;
@@ -123,7 +112,6 @@ export function initAISuggestion(textarea, overlay) {
       renderOverlay(textarea.value, aiRef.options[aiRef.activeIndex]);
     }
 
-    // Tab → 插入
     if (e.key === "Tab") {
       e.preventDefault();
 
@@ -138,32 +126,22 @@ export function initAISuggestion(textarea, overlay) {
       insertAtCursor(textarea, toInsert);
       overlay.innerHTML = "";
 
-      // ---------------------------
-      // multi-step-options → 下一步
-      // ---------------------------
       if (aiRef.type === "multi-step-options") {
         aiRef.stepIndex++;
-
         if (aiRef.stepIndex < aiRef.steps.length) {
           aiRef.options = aiRef.steps[aiRef.stepIndex].options;
           aiRef.activeIndex = 0;
-
-          const nextFull = aiRef.options[0];
-          renderOverlay(textarea.value, nextFull);
+          renderOverlay(textarea.value, aiRef.options[0]);
         } else {
           resetAI();
         }
         return;
       }
 
-      // 其他類型 → 清空
       resetAI();
     }
   });
 
-  // ---------------------------
-  // 工具：插入文字
-  // ---------------------------
   function insertAtCursor(textarea, text) {
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
@@ -176,9 +154,6 @@ export function initAISuggestion(textarea, overlay) {
     textarea.selectionStart = textarea.selectionEnd = newPos;
   }
 
-  // ---------------------------
-  // 工具：重置 AI 狀態
-  // ---------------------------
   function resetAI() {
     aiRef.type = null;
     aiRef.steps = null;
