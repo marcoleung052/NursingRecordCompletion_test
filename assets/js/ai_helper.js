@@ -151,6 +151,8 @@ export function initAISuggestion(textarea, overlay) {
       insertAtCursor(textarea, toInsert);
       overlay.innerHTML = "";
 
+      textarea.dispatchEvent(new Event("input"));
+
       if (aiRef.type === "multi-step-options") {
         aiRef.stepIndex++;
         if (aiRef.stepIndex < aiRef.steps.length) {
