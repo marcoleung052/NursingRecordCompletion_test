@@ -3,6 +3,7 @@ import { apiFetch } from "./api.js";
 export function initAISuggestion(textarea, overlay) {
   const aiRef = {
     type: null,
+    full: null,        // ⭐ 保存完整句子（fixed-sequence / multi-options）
     steps: null,
     stepIndex: 0,
     options: [],
@@ -23,10 +24,22 @@ export function initAISuggestion(textarea, overlay) {
     `;
   }
 
+  // ---------------------------
+  // input：每次輸入都要重新 render prefix 補全
+  // ---------------------------
   textarea.addEventListener("input", () => {
     clearTimeout(typingTimer);
 
     const text = textarea.value;
+
+    // ⭐ 如果是 prefix 補全 → 直接重新 render，不用 callAI
+    if (aiRef.type === "fixed-sequence" || aiRef.type === "multi-options") {
+      if (aiRef.full) {
+        renderOverlay(text, aiRef.full);
+        return;
+      }
+    }
+
     if (!text.trim()) {
       overlay.innerHTML = "";
       resetAI();
@@ -36,6 +49,9 @@ export function initAISuggestion(textarea, overlay) {
     typingTimer = setTimeout(() => callAI(text), FRONTEND_DELAY);
   });
 
+  // ---------------------------
+  // 呼叫後端
+  // ---------------------------
   async function callAI(prompt) {
     renderOverlay(prompt, "(正在補全…)");
 
@@ -51,9 +67,8 @@ export function initAISuggestion(textarea, overlay) {
     // fixed-sequence → prefix 補全
     // ---------------------------
     if (skill.type === "fixed-sequence") {
-      const full = skill.text;
-      renderOverlay(prompt, full);
-      aiRef.options = [full];
+      aiRef.full = skill.text;   // ⭐ 保存完整句子
+      renderOverlay(prompt, aiRef.full);
       return;
     }
 
@@ -62,10 +77,8 @@ export function initAISuggestion(textarea, overlay) {
     // ---------------------------
     if (skill.type === "multi-options") {
       aiRef.options = skill.options;
-      aiRef.activeIndex = 0;
-
-      const full = aiRef.options[0];
-      renderOverlay(prompt, full);
+      aiRef.full = aiRef.options[0];  // ⭐ 保存完整句子
+      renderOverlay(prompt, aiRef.full);
       return;
     }
 
@@ -76,10 +89,8 @@ export function initAISuggestion(textarea, overlay) {
       aiRef.steps = skill.steps;
       aiRef.stepIndex = 0;
       aiRef.options = aiRef.steps[0].options;
-      aiRef.activeIndex = 0;
-
-      const full = aiRef.options[0];
-      renderOverlay(prompt, full);
+      aiRef.full = aiRef.options[0];
+      renderOverlay(prompt, aiRef.full);
       return;
     }
 
@@ -88,34 +99,37 @@ export function initAISuggestion(textarea, overlay) {
     // ---------------------------
     if (skill.type === "ai-multi-options") {
       aiRef.options = skill.options;
-      aiRef.activeIndex = 0;
-
-      const full = aiRef.options[0];
-      renderOverlay(prompt, full);
+      aiRef.full = aiRef.options[0];
+      renderOverlay(prompt, aiRef.full);
       return;
     }
   }
 
+  // ---------------------------
+  // keydown：上下鍵 + Tab
+  // ---------------------------
   textarea.addEventListener("keydown", (e) => {
     if (!aiRef.options || aiRef.options.length === 0) return;
 
     if (e.key === "ArrowDown") {
       e.preventDefault();
       aiRef.activeIndex = (aiRef.activeIndex + 1) % aiRef.options.length;
-      renderOverlay(textarea.value, aiRef.options[aiRef.activeIndex]);
+      aiRef.full = aiRef.options[aiRef.activeIndex];
+      renderOverlay(textarea.value, aiRef.full);
     }
 
     if (e.key === "ArrowUp") {
       e.preventDefault();
       aiRef.activeIndex =
         (aiRef.activeIndex - 1 + aiRef.options.length) % aiRef.options.length;
-      renderOverlay(textarea.value, aiRef.options[aiRef.activeIndex]);
+      aiRef.full = aiRef.options[aiRef.activeIndex];
+      renderOverlay(textarea.value, aiRef.full);
     }
 
     if (e.key === "Tab") {
       e.preventDefault();
 
-      const full = aiRef.options[aiRef.activeIndex];
+      const full = aiRef.full;
       const text = textarea.value;
       const trigger = text.split(/[\s\n]/).pop();
 
@@ -131,7 +145,8 @@ export function initAISuggestion(textarea, overlay) {
         if (aiRef.stepIndex < aiRef.steps.length) {
           aiRef.options = aiRef.steps[aiRef.stepIndex].options;
           aiRef.activeIndex = 0;
-          renderOverlay(textarea.value, aiRef.options[0]);
+          aiRef.full = aiRef.options[0];
+          renderOverlay(textarea.value, aiRef.full);
         } else {
           resetAI();
         }
@@ -156,6 +171,7 @@ export function initAISuggestion(textarea, overlay) {
 
   function resetAI() {
     aiRef.type = null;
+    aiRef.full = null;
     aiRef.steps = null;
     aiRef.stepIndex = 0;
     aiRef.options = [];
