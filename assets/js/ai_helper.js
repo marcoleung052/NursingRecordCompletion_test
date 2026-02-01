@@ -25,20 +25,20 @@ export function initAISuggestion(textarea, overlay) {
   }
 
   // ---------------------------
-  // input：每次輸入都要重新 render prefix 補全
+  // input handler
   // ---------------------------
   textarea.addEventListener("input", () => {
     clearTimeout(typingTimer);
 
     const text = textarea.value;
 
-    // ⭐ multi-step-options → 完全在前端本地跑，不再 callAI
+    // ⭐ multi-step-options → 本地補全，不 callAI
     if (aiRef.type === "multi-step-options") {
       if (aiRef.full) renderOverlay(text, aiRef.full);
       return;
     }
 
-    // ⭐ fixed-sequence / multi-options → 本地 prefix 補全
+    // ⭐ fixed-sequence / multi-options → 本地補全
     if (aiRef.type === "fixed-sequence" || aiRef.type === "multi-options") {
       if (aiRef.full) {
         renderOverlay(text, aiRef.full);
@@ -56,7 +56,7 @@ export function initAISuggestion(textarea, overlay) {
   });
 
   // ---------------------------
-  // 呼叫後端
+  // call backend
   // ---------------------------
   async function callAI(prompt) {
     renderOverlay(prompt, "(正在補全…)");
@@ -70,7 +70,7 @@ export function initAISuggestion(textarea, overlay) {
     aiRef.type = skill.type;
 
     // ---------------------------
-    // trigger-prefix → prefix 補全
+    // trigger-prefix
     // ---------------------------
     if (skill.type === "trigger-prefix") {
       aiRef.full = skill.full;
@@ -100,7 +100,7 @@ export function initAISuggestion(textarea, overlay) {
     }
 
     // ---------------------------
-    // multi-step-options（一次回傳全部 steps）
+    // multi-step-options
     // ---------------------------
     if (skill.type === "multi-step-options") {
       aiRef.steps = skill.steps;
@@ -123,7 +123,7 @@ export function initAISuggestion(textarea, overlay) {
   }
 
   // ---------------------------
-  // keydown：上下鍵 + Tab
+  // keydown handler
   // ---------------------------
   textarea.addEventListener("keydown", (e) => {
     if (!aiRef.options || aiRef.options.length === 0) return;
@@ -158,7 +158,7 @@ export function initAISuggestion(textarea, overlay) {
       overlay.innerHTML = "";
 
       // ---------------------------
-      // multi-step-options → 本地 stepIndex 推進，不 callAI
+      // multi-step-options → 本地 stepIndex 推進
       // ---------------------------
       if (aiRef.type === "multi-step-options") {
         aiRef.stepIndex++;
@@ -174,11 +174,12 @@ export function initAISuggestion(textarea, overlay) {
       }
 
       // ---------------------------
-      // trigger-prefix → 插入後需要 callAI（進入 multi-step-options）
+      // trigger-prefix → 插入後 callAI("張眼")
       // ---------------------------
       if (aiRef.type === "trigger-prefix") {
+        const newText = textarea.value;
         resetAI();
-        textarea.dispatchEvent(new Event("input"));
+        callAI(newText);
         return;
       }
 
