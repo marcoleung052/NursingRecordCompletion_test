@@ -165,12 +165,18 @@ export function initAISuggestion(textarea, overlay) {
       if (aiRef.type === "multi-step-options") {
         aiRef.results.push(aiRef.options[aiRef.activeIndex]);
         aiRef.stepIndex++;
-
+      
         if (aiRef.stepIndex < aiRef.steps.length) {
           aiRef.options = aiRef.steps[aiRef.stepIndex].options;
           aiRef.activeIndex = 0;
           aiRef.full = aiRef.options[0];
-          renderOverlay(textarea.value, aiRef.full);
+      
+          // ⭐⭐ 這裡改成顯示「累積結果 + 、 + 下一個候選」
+          const prefix = aiRef.results.length > 0
+            ? aiRef.results.join("、") + "、"
+            : "";
+      
+          renderOverlay(prefix, prefix + aiRef.full);
         } else {
           const finalText = aiRef.results.join("、");
           textarea.value = finalText;
@@ -178,6 +184,7 @@ export function initAISuggestion(textarea, overlay) {
         }
         return;
       }
+
 
       // ---------------------------
       // trigger-prefix → 插入後 callAI("張眼")
