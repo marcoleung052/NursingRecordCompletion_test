@@ -64,6 +64,16 @@ export function initAISuggestion(textarea, overlay) {
     aiRef.type = skill.type;
 
     // ---------------------------
+    // trigger-prefix → prefix 補全
+    // ---------------------------
+    if (skill.type === "trigger-prefix") {
+      aiRef.full = skill.full;
+      renderOverlay(prompt, aiRef.full);
+      return;
+    }
+
+
+    // ---------------------------
     // fixed-sequence → prefix 補全
     // ---------------------------
     if (skill.type === "fixed-sequence") {
