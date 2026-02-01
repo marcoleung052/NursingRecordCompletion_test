@@ -161,18 +161,24 @@ export function initAISuggestion(textarea, overlay) {
       // multi-step-options → 本地 stepIndex 推進
       // ---------------------------
       if (aiRef.type === "multi-step-options") {
+        // 儲存當前 step 的結果
+        aiRef.results.push(aiRef.full);
+      
         aiRef.stepIndex++;
+      
         if (aiRef.stepIndex < aiRef.steps.length) {
           aiRef.options = aiRef.steps[aiRef.stepIndex].options;
           aiRef.activeIndex = 0;
           aiRef.full = aiRef.options[0];
           renderOverlay(textarea.value, aiRef.full);
         } else {
+          // ⭐ 所有 step 完成 → 用 "、" 串起來
+          const finalText = aiRef.results.join("、");
+          textarea.value = finalText;
           resetAI();
         }
         return;
       }
-
       // ---------------------------
       // trigger-prefix → 插入後 callAI("張眼")
       // ---------------------------
