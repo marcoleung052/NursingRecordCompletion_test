@@ -109,7 +109,8 @@ export function initAISuggestion(textarea, overlay) {
       aiRef.options = aiRef.steps[0].options;
       aiRef.full = aiRef.options[0];
       aiRef.results = [];   // ⭐ reset results
-      renderOverlay(prompt, aiRef.full);
+      const prefix = ""; 
+      renderOverlay(prefix, prefix + aiRef.full);
       return;
     }
 
