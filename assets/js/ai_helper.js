@@ -91,6 +91,19 @@ export function initAISuggestion(textarea, overlay) {
     }
 
     // ---------------------------
+    // trigger-multi-prefix（多選補全）
+    // ---------------------------
+    if (skill.type === "trigger-multi-prefix") {
+      aiRef.options = skill.candidates;
+      aiRef.activeIndex = 0;
+      aiRef.full = aiRef.options[0];
+    
+      // 顯示第一個候選
+      renderOverlay(prompt, aiRef.full);
+      return;
+    }
+
+    // ---------------------------
     // multi-options
     // ---------------------------
     if (skill.type === "multi-options") {
@@ -202,6 +215,14 @@ export function initAISuggestion(textarea, overlay) {
         callAI(newText);
         return;
       }
+
+      if (aiRef.type === "trigger-multi-prefix") {
+        const newText = textarea.value;
+        resetAI();
+        callAI(newText);
+        return;
+      }
+
 
       resetAI();
     }
