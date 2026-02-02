@@ -176,6 +176,12 @@ export function initAISuggestion(textarea, overlay) {
           const prefix = aiRef.results.length > 0
             ? aiRef.results.join("、") + "、"
             : "";
+          // 更新 textarea（讓使用者看到累積結果）
+          textarea.value = prefix;
+          
+          // 更新 overlay（顯示下一個候選）
+          renderOverlay(prefix, prefix + aiRef.full);
+
       
           renderOverlay(prefix, prefix + aiRef.full);
         } else {
