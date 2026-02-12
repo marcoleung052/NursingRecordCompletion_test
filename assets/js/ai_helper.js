@@ -247,26 +247,27 @@ export function initAISuggestion(textarea, overlay) {
       aiRef.results = [];
     }
     function replaceTimeWithInput(text) {
-    const input = document.getElementById("datetime");
-    if (!input || !input.value) return text;
-  
-    // datetime-local 格式：YYYY-MM-DDTHH:MM
-    const localTime = input.value.replace("T", " ");
-  
-    // 支援所有常見時間格式：
-    const patterns = [
-      /\b\d{2}:\d{2}\b/g,                                      // HH:MM
-      /\b\d{4}[\/\-]\d{2}[\/\-]\d{2}\b/g,                      // YYYY/MM/DD
-      /\b\d{4}[\/\-]\d{2}[\/\-]\d{2} \d{2}:\d{2}\b/g,          // YYYY/MM/DD HH:MM
-      /\b\d{4}[\/\-]\d{2}[\/\-]\d{2} \d{2}:\d{2}:\d{2}\b/g     // YYYY/MM/DD HH:MM:SS
-    ];
-  
-    let result = text;
-  
-    for (const p of patterns) {
-      result = result.replace(p, localTime);
+      const input = document.getElementById("datetime");
+      if (!input || !input.value) return text;
+    
+      // datetime-local 格式：YYYY-MM-DDTHH:MM
+      const localTime = input.value.replace("T", " ");
+    
+      // 支援所有常見時間格式 + AI 假時間 xx:xx
+      const patterns = [
+        /\bxx:xx\b/gi,                                      // AI 假時間
+        /\b\d{2}:\d{2}\b/g,                                 // HH:MM
+        /\b\d{4}[\/\-]\d{2}[\/\-]\d{2}\b/g,                 // YYYY/MM/DD
+        /\b\d{4}[\/\-]\d{2}[\/\-]\d{2} \d{2}:\d{2}\b/g,     // YYYY/MM/DD HH:MM
+        /\b\d{4}[\/\-]\d{2}[\/\-]\d{2} \d{2}:\d{2}:\d{2}\b/g // YYYY/MM/DD HH:MM:SS
+      ];
+    
+      let result = text;
+    
+      for (const p of patterns) {
+        result = result.replace(p, localTime);
+      }
+    
+      return result;
     }
-  
-    return result;
-  }
 }
