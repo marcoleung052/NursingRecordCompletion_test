@@ -35,7 +35,10 @@ export function initAISuggestion(textarea, overlay) {
 
     // ⭐ multi-step-options → 本地補全，不 callAI
     if (aiRef.type === "multi-step-options") {
-      if (aiRef.full) renderOverlay(text, aiRef.full);
+      const lastToken = text.split(/\s+/).pop();   // ❗ 不要 trim
+      if (aiRef.full.startsWith(lastToken)) {
+        renderOverlay(text, aiRef.full);
+      }
       return;
     }
 
