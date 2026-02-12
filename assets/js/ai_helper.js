@@ -40,10 +40,14 @@ export function initAISuggestion(textarea, overlay) {
       if (aiRef.full && aiRef.full.startsWith(lastToken)) {
         renderOverlay(text, aiRef.full);
     
-        // ⭐ 當補全完全 match 時，自動 callAI 進入下一階段
-        if (text === aiRef.full) {
-          resetAI();                 // 清掉 trigger-prefix 狀態
-          callAI(text);              // ⭐ 重新 callAI，後端會回傳 multi-step-options
+        // ⭐ 當補全完成（最後 token == full）→ 寫入 textarea → 觸發 input
+        if (lastToken === aiRef.full) {
+          textarea.value = aiRef.full;
+    
+          // ⭐ 觸發 input → callAI("Admitted") → multi-step-options
+          textarea.dispatchEvent(new Event("input"));
+    
+          return;
         }
     
       } else {
