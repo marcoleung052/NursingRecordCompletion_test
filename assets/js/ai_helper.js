@@ -35,26 +35,11 @@ export function initAISuggestion(textarea, overlay) {
   
     // ⭐ trigger-prefix → 本地補全（一定要放最前面）
     if (aiRef.type === "trigger-prefix") {
-      const lastToken = text.split(/\s+/).pop();
-    
-      if (aiRef.full && aiRef.full.startsWith(lastToken)) {
-        renderOverlay(text, aiRef.full);
-    
-        // ⭐ 當補全完成（最後 token == full）→ 寫入 textarea → 觸發 input
-        if (lastToken === aiRef.full) {
-          textarea.value = aiRef.full;
-    
-          // ⭐ 觸發 input → callAI("Admitted") → multi-step-options
-          textarea.dispatchEvent(new Event("input"));
-    
-          return;
-        }
-    
-      } else {
-        overlay.innerHTML = "";
+        const newText = textarea.value;
+        resetAI();
+        callAI(newText);
+        return;
       }
-      return;
-    }
   
     // ⭐ multi-step-options → 本地補全
     if (aiRef.type === "multi-step-options") {
