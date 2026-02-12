@@ -170,19 +170,16 @@ export function initAISuggestion(textarea, overlay) {
     
       const full = aiRef.full;
       const text = textarea.value;
-      let toInsert;
-      
-      if (full.trim().startsWith(trigger)) {
-        toInsert = full.trim().slice(trigger.length);
-      } else {
-        toInsert = full.trim();
-      }
-
     
-      const toInsert = full.startsWith(trigger)
+      // 取使用者輸入的最後一段（不會要求你手動加空白）
+      const trigger = text.trim().split(/\s+/).pop();
+    
+      // ⭐ 不會重複宣告 toInsert
+      let toInsert = full.startsWith(trigger)
         ? full.slice(trigger.length)
         : full;
     
+      // ⭐ 正確宣告 segment
       let segment = toInsert;
     
       // ⭐ 智慧空白：只有前後都沒有標點符號才加空白
@@ -190,7 +187,6 @@ export function initAISuggestion(textarea, overlay) {
     
         const lastChar = textarea.value.slice(-1);
         const firstChar = segment[0];
-    
         const punctuation = ".,;!?，。；！？、";
     
         const needSpaceBefore = !punctuation.includes(lastChar);
@@ -204,6 +200,7 @@ export function initAISuggestion(textarea, overlay) {
       appendSegment(textarea, segment, aiRef.type);
       overlay.innerHTML = "";
     
+      // ⭐ multi-step-options：正確 push，不重複
       if (aiRef.type === "multi-step-options") {
         aiRef.results.push(segment);
         aiRef.stepIndex++;
