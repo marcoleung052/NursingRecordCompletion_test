@@ -175,9 +175,7 @@ export function initAISuggestion(textarea, overlay) {
       const trigger = text.trim().split(/\s+/).pop();
     
       // ⭐ 不會重複宣告 toInsert
-      let toInsert = full.startsWith(trigger)
-        ? full.slice(trigger.length)
-        : full;
+      let toInsert = full;
     
       // ⭐ 正確宣告 segment
       let segment = toInsert;
