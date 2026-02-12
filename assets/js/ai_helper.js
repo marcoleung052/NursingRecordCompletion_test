@@ -36,9 +36,16 @@ export function initAISuggestion(textarea, overlay) {
     // ⭐ trigger-prefix → 本地補全（一定要放最前面）
     if (aiRef.type === "trigger-prefix") {
       const lastToken = text.split(/\s+/).pop();
-  
+    
       if (aiRef.full && aiRef.full.startsWith(lastToken)) {
         renderOverlay(text, aiRef.full);
+    
+        // ⭐ 當補全完全 match 時，自動 callAI 進入下一階段
+        if (text === aiRef.full) {
+          resetAI();                 // 清掉 trigger-prefix 狀態
+          callAI(text);              // ⭐ 重新 callAI，後端會回傳 multi-step-options
+        }
+    
       } else {
         overlay.innerHTML = "";
       }
