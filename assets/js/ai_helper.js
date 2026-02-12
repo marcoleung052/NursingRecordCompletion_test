@@ -167,53 +167,49 @@ export function initAISuggestion(textarea, overlay) {
 
     if (e.key === "Tab") {
       e.preventDefault();
-    
+
       const full = aiRef.full;
       const text = textarea.value;
-    
-      // 使用者輸入的最後一段（trigger）
-      const trigger = text.split(/[\s\n]/).pop();
-    
-      // ⭐ 找到 trigger 的實際位置（不會刪錯）
-      const triggerIndex = text.lastIndexOf(trigger);
-    
-      // ⭐ 刪掉 trigger（這是唯一正確的方式）
-      if (triggerIndex !== -1) {
-        textarea.value = text.slice(0, triggerIndex);
-      }
-    
-      // ⭐ 直接使用 full 當補全
-      let segment = full;
-    
-      // ⭐ 智慧空白：只有前後都沒有標點才加空白
-      const lastChar = textarea.value.slice(-1);
-      const firstChar = segment[0];
-      const punctuation = ".,;!?，。；！？、";
-    
-      const needSpaceBefore = !punctuation.includes(lastChar);
-      const needSpaceAfter = !punctuation.includes(firstChar);
-    
+
+      // 取使用者輸入的最後一段（不會要求你手動加空白）
+      const trigger = text.trim().split(/\s+/).pop();
+
+      // ⭐ 不會重複宣告 toInsert
+      let toInsert = full.startsWith(trigger)
+        ? full.slice(trigger.length)
+        : full;
+
+      // ⭐ 正確宣告 segment
+      let segment = toInsert;
+
+      // ⭐ 智慧空白：只有前後都沒有標點符號才加空白
       if (aiRef.type !== "trigger-prefix" && aiRef.type !== "trigger-multi-prefix") {
+
+        const lastChar = textarea.value.slice(-1);
+        const firstChar = segment[0];
+        const punctuation = ".,;!?，。；！？、";
+
+        const needSpaceBefore = !punctuation.includes(lastChar);
+        const needSpaceAfter = !punctuation.includes(firstChar);
+
         if (needSpaceBefore && needSpaceAfter) {
           segment = " " + segment;
         }
       }
-    
-      // ⭐ 插入補全文字
-      textarea.value += segment;
-      textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
+
+      appendSegment(textarea, segment, aiRef.type);
       overlay.innerHTML = "";
-    
+
       // ⭐ multi-step-options：正確 push，不重複
       if (aiRef.type === "multi-step-options") {
         aiRef.results.push(segment);
         aiRef.stepIndex++;
-    
+
         if (aiRef.stepIndex < aiRef.steps.length) {
           aiRef.options = aiRef.steps[aiRef.stepIndex].options;
           aiRef.activeIndex = 0;
           aiRef.full = replaceTimeWithInput(aiRef.options[0]);
-    
+
           const prefix = textarea.value;
           renderOverlay(prefix, prefix + aiRef.full);
         } else {
@@ -221,7 +217,7 @@ export function initAISuggestion(textarea, overlay) {
         }
         return;
       }
-    
+
       resetAI();
     }
   });
