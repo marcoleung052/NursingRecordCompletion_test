@@ -61,8 +61,8 @@ export function initAISuggestion(textarea, overlay) {
   // ---------------------------
   async function callAI(prompt) {
     renderOverlay(prompt, "(正在補全…)");
-    const urlParams = new URLSearchParams(window.location.search);
-    const patientId = urlParams.get("patient_id");
+    const params = new URLSearchParams(window.location.search);
+    const patientId = params.get("id");
 
     const res = await apiFetch("/api/predict", {
       method: "POST",
