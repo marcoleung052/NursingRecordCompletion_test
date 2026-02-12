@@ -174,11 +174,15 @@ export function initAISuggestion(textarea, overlay) {
       // 使用者輸入的最後一段（trigger）
       const trigger = text.split(/[\s\n]/).pop();
     
-      // ⭐ 正確刪除 trigger（不會刪錯位置）
-      const before = text.slice(0, text.length - trigger.length);
-      textarea.value = before;
+      // ⭐ 找到 trigger 的實際位置（不會刪錯）
+      const triggerIndex = text.lastIndexOf(trigger);
     
-      // ⭐ 直接使用 full 當補全（不再用 startsWith）
+      // ⭐ 刪掉 trigger（這是唯一正確的方式）
+      if (triggerIndex !== -1) {
+        textarea.value = text.slice(0, triggerIndex);
+      }
+    
+      // ⭐ 直接使用 full 當補全
       let segment = full;
     
       // ⭐ 智慧空白：只有前後都沒有標點才加空白
@@ -196,7 +200,8 @@ export function initAISuggestion(textarea, overlay) {
       }
     
       // ⭐ 插入補全文字
-      appendSegment(textarea, segment, aiRef.type);
+      textarea.value += segment;
+      textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
       overlay.innerHTML = "";
     
       // ⭐ multi-step-options：正確 push，不重複
