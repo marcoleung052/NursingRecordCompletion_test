@@ -170,7 +170,14 @@ export function initAISuggestion(textarea, overlay) {
     
       const full = aiRef.full;
       const text = textarea.value;
-      const trigger = text.split(/[\s\n]/).pop();
+      let toInsert;
+      
+      if (full.trim().startsWith(trigger)) {
+        toInsert = full.trim().slice(trigger.length);
+      } else {
+        toInsert = full.trim();
+      }
+
     
       const toInsert = full.startsWith(trigger)
         ? full.slice(trigger.length)
