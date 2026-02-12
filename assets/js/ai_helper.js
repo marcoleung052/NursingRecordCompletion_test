@@ -227,10 +227,7 @@ export function initAISuggestion(textarea, overlay) {
 
     function appendSegment(textarea, text) {
       // 自動加換行（避免黏在一起）
-      const prefix = textarea.value.endsWith("/n")
-        ? "\n"
-        : "";
-      prefix = textarea.value.endsWith("\" \"")
+      const prefix = textarea.value.endsWith("\" \"")
         ? " "
         : "";
     
