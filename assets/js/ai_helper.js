@@ -176,7 +176,7 @@ export function initAISuggestion(textarea, overlay) {
         ? full.slice(trigger.length)
         : full;
 
-      appendSegment(textarea, toInsert);
+      appendSegment(textarea, toInsert, aiRef.type);
       overlay.innerHTML = "";
 
       // multi-step-options → 本地 stepIndex 推進
@@ -225,13 +225,15 @@ export function initAISuggestion(textarea, overlay) {
     }
   });
 
-    function appendSegment(textarea, text) {
-      // 自動加換行（避免黏在一起）
-      const prefix = textarea.value.endsWith("\n") || textarea.value === ""
-    ? ""
-    : "\n";
-    
-      textarea.value = textarea.value + prefix + text;
+    function appendSegment(textarea, text, type) {
+      // ⭐ trigger-prefix / trigger-multi-prefix → 直接插入，不加空白
+      if (type === "trigger-prefix" || type === "trigger-multi-prefix") {
+        textarea.value += text;
+      } 
+      else {
+        // ⭐ 其他補全 → 自動加一個空白
+        textarea.value += " " + text;
+      }
     
       // 游標移到最後
       textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
