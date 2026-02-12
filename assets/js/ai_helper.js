@@ -191,10 +191,6 @@ export function initAISuggestion(textarea, overlay) {
           aiRef.activeIndex = 0;
           aiRef.full = aiRef.options[0];
       
-          // ⭐⭐ 這裡改成顯示「累積結果 + 、 + 下一個候選」
-          const prefix = aiRef.results.length > 0
-            ? aiRef.results.join("、") + "、"
-            : "";
           // 更新 textarea（讓使用者看到累積結果）
           textarea.value = prefix;
           
