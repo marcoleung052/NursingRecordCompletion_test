@@ -179,9 +179,7 @@ export function initAISuggestion(textarea, overlay) {
       insertAtCursor(textarea, toInsert);
       overlay.innerHTML = "";
 
-      // ---------------------------
       // multi-step-options → 本地 stepIndex 推進
-      // ---------------------------
       if (aiRef.type === "multi-step-options") {
         aiRef.results.push(aiRef.options[aiRef.activeIndex]);
         aiRef.stepIndex++;
@@ -191,13 +189,10 @@ export function initAISuggestion(textarea, overlay) {
           aiRef.activeIndex = 0;
           aiRef.full = replaceTimeWithInput(aiRef.options[0]);
       
-          // 更新 textarea（讓使用者看到累積結果）
-          textarea.value = prefix;
-          
-          // 更新 overlay（顯示下一個候選）
-          renderOverlay(prefix, prefix + aiRef.full);
-
+          // ⭐ prefix = 使用者目前輸入的內容
+          const prefix = textarea.value;
       
+          // 更新 overlay（顯示下一個候選）
           renderOverlay(prefix, prefix + aiRef.full);
         } else {
           const finalText = aiRef.results.join("、");
