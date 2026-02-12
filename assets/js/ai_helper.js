@@ -176,7 +176,7 @@ export function initAISuggestion(textarea, overlay) {
         ? full.slice(trigger.length)
         : full;
 
-      insertAtCursor(textarea, toInsert);
+      appendSegment(textarea, toInsert);
       overlay.innerHTML = "";
 
       // multi-step-options → 本地 stepIndex 推進
@@ -225,16 +225,16 @@ export function initAISuggestion(textarea, overlay) {
     }
   });
 
-    function insertAtCursor(textarea, text) {
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const before = textarea.value.substring(0, start);
-      const after = textarea.value.substring(end);
-  
-      textarea.value = before + text + after;
-  
-      const newPos = start + text.length;
-      textarea.selectionStart = textarea.selectionEnd = newPos;
+    function appendSegment(textarea, text) {
+      // 自動加換行（避免黏在一起）
+      const prefix = textarea.value.endsWith("\n") || textarea.value === ""
+        ? ""
+        : "\n";
+    
+      textarea.value = textarea.value + prefix + text;
+    
+      // 游標移到最後
+      textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
     }
   
     function resetAI() {
