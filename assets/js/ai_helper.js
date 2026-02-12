@@ -80,8 +80,8 @@ export function initAISuggestion(textarea, overlay) {
     // trigger-prefix
     // ---------------------------
     if (skill.type === "trigger-prefix") {
-      aiRef.full = skill.full;
-      aiRef.options = [skill.full];
+      aiRef.full = replaceTimeWithInput(skill.full);
+      aiRef.options = [aiRef.full];
       aiRef.activeIndex = 0;
       renderOverlay(prompt, aiRef.full);
       return;
@@ -91,7 +91,7 @@ export function initAISuggestion(textarea, overlay) {
     // fixed-sequence
     // ---------------------------
     if (skill.type === "fixed-sequence") {
-      aiRef.full = skill.text;
+      aiRef.full = replaceTimeWithInput(skill.text);
       renderOverlay(prompt, aiRef.full);
       return;
     }
@@ -247,28 +247,26 @@ export function initAISuggestion(textarea, overlay) {
       aiRef.results = [];
     }
     function replaceTimeWithInput(text) {
-      const input = document.getElementById("datetime");
-      if (!input || !input.value) return text;
-    
-      // datetime-local 格式：YYYY-MM-DDTHH:MM
-      const localTime = input.value.replace("T", " ");
-    
-      // 支援三種格式：
-      // 1) HH:MM
-      // 2) YYYY/MM/DD HH:MM
-      // 3) YYYY/MM/DD HH:MM:SS
-      const patterns = [
-        /\b\d{2}:\d{2}\b/g,
-        /\b\d{4}[\/\-]\d{2}[\/\-]\d{2} \d{2}:\d{2}\b/g,
-        /\b\d{4}[\/\-]\d{2}[\/\-]\d{2} \d{2}:\d{2}:\d{2}\b/g
-      ];
-    
-      let result = text;
-    
-      for (const p of patterns) {
-        result = result.replace(p, localTime);
-      }
-    
-      return result;
+    const input = document.getElementById("datetime");
+    if (!input || !input.value) return text;
+  
+    // datetime-local 格式：YYYY-MM-DDTHH:MM
+    const localTime = input.value.replace("T", " ");
+  
+    // 支援所有常見時間格式：
+    const patterns = [
+      /\b\d{2}:\d{2}\b/g,                                      // HH:MM
+      /\b\d{4}[\/\-]\d{2}[\/\-]\d{2}\b/g,                      // YYYY/MM/DD
+      /\b\d{4}[\/\-]\d{2}[\/\-]\d{2} \d{2}:\d{2}\b/g,          // YYYY/MM/DD HH:MM
+      /\b\d{4}[\/\-]\d{2}[\/\-]\d{2} \d{2}:\d{2}:\d{2}\b/g     // YYYY/MM/DD HH:MM:SS
+    ];
+  
+    let result = text;
+  
+    for (const p of patterns) {
+      result = result.replace(p, localTime);
     }
+  
+    return result;
+  }
 }
