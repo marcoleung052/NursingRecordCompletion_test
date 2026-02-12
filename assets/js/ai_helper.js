@@ -84,6 +84,7 @@ export function initAISuggestion(textarea, overlay) {
       aiRef.options = [skill.full];
       aiRef.activeIndex = 0;
       renderOverlay(prompt, aiRef.full);
+      autoFillDateTime(aiRef.full);
       return;
     }
 
@@ -93,6 +94,7 @@ export function initAISuggestion(textarea, overlay) {
     if (skill.type === "fixed-sequence") {
       aiRef.full = skill.text;
       renderOverlay(prompt, aiRef.full);
+      autoFillDateTime(aiRef.full);
       return;
     }
 
@@ -106,6 +108,7 @@ export function initAISuggestion(textarea, overlay) {
     
       // 顯示第一個候選
       renderOverlay(prompt, aiRef.full);
+      autoFillDateTime(aiRef.full);
       return;
     }
 
@@ -116,6 +119,7 @@ export function initAISuggestion(textarea, overlay) {
       aiRef.options = skill.options;
       aiRef.full = aiRef.options[0];
       renderOverlay(prompt, aiRef.full);
+      autoFillDateTime(aiRef.full);
       return;
     }
 
@@ -130,6 +134,7 @@ export function initAISuggestion(textarea, overlay) {
       aiRef.results = [];   // ⭐ reset results
       const prefix = ""; 
       renderOverlay(prefix, prefix + aiRef.full);
+      autoFillDateTime(aiRef.full);
       return;
     }
 
@@ -140,6 +145,7 @@ export function initAISuggestion(textarea, overlay) {
       aiRef.options = skill.options;
       aiRef.full = aiRef.options[0];
       renderOverlay(prompt, aiRef.full);
+      autoFillDateTime(aiRef.full);
       return;
     }
   }
@@ -251,4 +257,50 @@ export function initAISuggestion(textarea, overlay) {
     aiRef.activeIndex = 0;
     aiRef.results = [];
   }
+  function autoFillDateTime(text) {
+  const input = document.getElementById("datetime");
+  if (!input) return;
+
+  // 支援三種格式：
+  // 1) HH:MM
+  // 2) YYYY/MM/DD HH:MM
+  // 3) YYYY/MM/DD HH:MM:SS
+  const patterns = [
+    /\b(\d{2}):(\d{2})\b/,                                   // HH:MM
+    /\b(\d{4})[\/\-](\d{2})[\/\-](\d{2}) (\d{2}):(\d{2})\b/, // YYYY/MM/DD HH:MM
+    /\b(\d{4})[\/\-](\d{2})[\/\-](\d{2}) (\d{2}):(\d{2}):(\d{2})\b/ // YYYY/MM/DD HH:MM:SS
+  ];
+
+  for (const p of patterns) {
+    const match = text.match(p);
+    if (match) {
+      let dt;
+
+      // HH:MM → 用今天日期
+      if (match.length === 3) {
+        const now = new Date();
+        now.setHours(match[1], match[2], 0);
+        dt = now;
+      }
+
+      // YYYY/MM/DD HH:MM
+      else if (match.length === 6) {
+        dt = new Date(`${match[1]}-${match[2]}-${match[3]}T${match[4]}:${match[5]}:00`);
+      }
+
+      // YYYY/MM/DD HH:MM:SS
+      else if (match.length === 7) {
+        dt = new Date(`${match[1]}-${match[2]}-${match[3]}T${match[4]}:${match[5]}:${match[6]}`);
+      }
+
+      if (dt instanceof Date && !isNaN(dt)) {
+        // 修正時區
+        dt.setMinutes(dt.getMinutes() - dt.getTimezoneOffset());
+        input.value = dt.toISOString().slice(0, 16);
+      }
+
+      return; // 找到一個就結束
+    }
+  }
+}
 }
