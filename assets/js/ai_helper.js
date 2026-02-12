@@ -250,24 +250,23 @@ export function initAISuggestion(textarea, overlay) {
       const input = document.getElementById("datetime");
       if (!input || !input.value) return text;
     
-      // datetime-local 格式：YYYY-MM-DDTHH:MM
-      const localTime = input.value.replace("T", " ");
+      // datetime-local → 拆成日期與時間
+      const [datePart, timePart] = input.value.split("T");
+      const [hh, mm] = timePart.split(":");
     
-      // 支援所有常見時間格式 + AI 假時間 xx:xx
-      const patterns = [
-        /\bxx:xx\b/gi,                                      // AI 假時間
-        /\b\d{2}:\d{2}\b/g,                                 // HH:MM
-        /\b\d{4}[\/\-]\d{2}[\/\-]\d{2}\b/g,                 // YYYY/MM/DD
-        /\b\d{4}[\/\-]\d{2}[\/\-]\d{2} \d{2}:\d{2}\b/g,     // YYYY/MM/DD HH:MM
-        /\b\d{4}[\/\-]\d{2}[\/\-]\d{2} \d{2}:\d{2}:\d{2}\b/g // YYYY/MM/DD HH:MM:SS
-      ];
+      // 產生三種格式
+      const timeHHMM = `${hh}:${mm}`;
+      const dateSlash = datePart.replace(/-/g, "/");
+      const dateTimeHHMM = `${dateSlash} ${hh}:${mm}`;
+      const dateTimeHHMMSS = `${dateSlash} ${hh}:${mm}:00`;
     
-      let result = text;
-    
-      for (const p of patterns) {
-        result = result.replace(p, localTime);
-      }
-    
-      return result;
+      // 依照 AI 補全的格式替換
+      return text
+        // 1) xxxx/xx/xx xx:xx:xx → 用 HH:MM:SS
+        .replace(/\bxxxx\/xx\/xx xx:xx:xx\b/gi, dateTimeHHMMSS)
+        // 2) xxxx/xx/xx xx:xx → 用 HH:MM
+        .replace(/\bxxxx\/xx\/xx xx:xx\b/gi, dateTimeHHMM)
+        // 3) xx:xx → 用 HH:MM
+        .replace(/\bxx:xx\b/gi, timeHHMM);
     }
 }
