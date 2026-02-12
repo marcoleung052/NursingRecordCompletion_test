@@ -171,17 +171,17 @@ export function initAISuggestion(textarea, overlay) {
       const full = aiRef.full;
       const text = textarea.value;
     
-      // 使用者輸入的最後一段
-      const trigger = text.trim().split(/\s+/).pop();
+      // 使用者輸入的最後一段（trigger）
+      const trigger = text.split(/[\s\n]/).pop();
     
-      // ⭐ 刪掉 trigger（這是你缺少的關鍵）
-      const before = textarea.value.slice(0, textarea.value.length - trigger.length);
+      // ⭐ 正確刪除 trigger（不會刪錯位置）
+      const before = text.slice(0, text.length - trigger.length);
       textarea.value = before;
     
-      // 直接使用 full 當補全
+      // ⭐ 直接使用 full 當補全（不再用 startsWith）
       let segment = full;
     
-      // ⭐ 智慧空白：只有前後都沒有標點符號才加空白
+      // ⭐ 智慧空白：只有前後都沒有標點才加空白
       const lastChar = textarea.value.slice(-1);
       const firstChar = segment[0];
       const punctuation = ".,;!?，。；！？、";
@@ -195,10 +195,11 @@ export function initAISuggestion(textarea, overlay) {
         }
       }
     
+      // ⭐ 插入補全文字
       appendSegment(textarea, segment, aiRef.type);
       overlay.innerHTML = "";
     
-      // multi-step-options
+      // ⭐ multi-step-options：正確 push，不重複
       if (aiRef.type === "multi-step-options") {
         aiRef.results.push(segment);
         aiRef.stepIndex++;
