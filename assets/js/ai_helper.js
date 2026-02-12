@@ -6,7 +6,7 @@ export function initAISuggestion(textarea, overlay) {
     full: null,
     steps: null,
     stepIndex: 0,
-    options: appendSegment,
+    options: [],
     activeIndex: 0,
     results: []
   };
@@ -196,7 +196,7 @@ export function initAISuggestion(textarea, overlay) {
           renderOverlay(prefix, prefix + aiRef.full);
         } else {
           const finalText = aiRef.results.join("");
-          textarea.value = finalText;
+          appendSegment(textarea, finalText); 
           resetAI();
         }
         return;
@@ -227,9 +227,9 @@ export function initAISuggestion(textarea, overlay) {
 
     function appendSegment(textarea, text) {
       // 自動加換行（避免黏在一起）
-      const prefix = textarea.value.endsWith("\" \"")
-        ? " "
-        : "";
+      const prefix = textarea.value.endsWith("\n") || textarea.value === ""
+    ? ""
+    : "\n";
     
       textarea.value = textarea.value + prefix + text;
     
