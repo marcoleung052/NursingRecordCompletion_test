@@ -85,6 +85,7 @@ if (location.pathname.includes("add_record.html")) {
     try {
       await apiFetch('/records', {
         method: 'POST',
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
       alert("新增成功");
@@ -148,6 +149,7 @@ if (location.pathname.includes("edit_record.html")) {
     try {
       await apiFetch(`/records/${recordId}`, {
         method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
 
