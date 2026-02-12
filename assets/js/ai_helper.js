@@ -195,7 +195,7 @@ export function initAISuggestion(textarea, overlay) {
           // 更新 overlay（顯示下一個候選）
           renderOverlay(prefix, prefix + aiRef.full);
         } else {
-          const finalText = aiRef.results.join("、");
+          const finalText = aiRef.results.join("");
           textarea.value = finalText;
           resetAI();
         }
