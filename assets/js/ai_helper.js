@@ -36,7 +36,7 @@ export function initAISuggestion(textarea, overlay) {
     // ⭐ trigger-prefix → 本地補全
     if (aiRef.type === "trigger-prefix") {
       const lastToken = text.split(/\s+/).pop();   // ❗ 不要 trim
-  
+    
       if (aiRef.full && aiRef.full.startsWith(lastToken)) {
         renderOverlay(text, aiRef.full);
       } else {
