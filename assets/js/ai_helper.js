@@ -167,40 +167,46 @@ export function initAISuggestion(textarea, overlay) {
 
     if (e.key === "Tab") {
       e.preventDefault();
-
+    
       const full = aiRef.full;
       const text = textarea.value;
       const trigger = text.split(/[\s\n]/).pop();
-
+    
       const toInsert = full.startsWith(trigger)
         ? full.slice(trigger.length)
         : full;
-
-      appendSegment(textarea, toInsert, aiRef.type);
+    
+      // ⭐ 正確宣告 segment（避免 undefined）
+      let segment = toInsert;
+    
+      // ⭐ trigger-prefix / trigger-multi-prefix → 不加空白
+      if (aiRef.type !== "trigger-prefix" && aiRef.type !== "trigger-multi-prefix") {
+        segment = " " + segment;   // 其他補全 → 自動加空白
+      }
+    
+      appendSegment(textarea, segment, aiRef.type);
       overlay.innerHTML = "";
-
-      // multi-step-options → 本地 stepIndex 推進
+    
+      // ⭐ multi-step-options → 正確 push segment（不會重複）
       if (aiRef.type === "multi-step-options") {
-        aiRef.results.push(segment);
+        aiRef.results.push(segment);   // ← 這裡才是你真正 append 的內容
         aiRef.stepIndex++;
-      
+    
         if (aiRef.stepIndex < aiRef.steps.length) {
           aiRef.options = aiRef.steps[aiRef.stepIndex].options;
           aiRef.activeIndex = 0;
           aiRef.full = replaceTimeWithInput(aiRef.options[0]);
-      
-          // ⭐ prefix = 使用者目前輸入的內容
+    
           const prefix = textarea.value;
-      
-          // 更新 overlay（顯示下一個候選）
           renderOverlay(prefix, prefix + aiRef.full);
         } else {
-          const finalText = aiRef.results.join("");
-          appendSegment(textarea, finalText); 
           resetAI();
         }
         return;
       }
+    
+      resetAI();
+    }
 
 
       // ---------------------------
@@ -226,16 +232,12 @@ export function initAISuggestion(textarea, overlay) {
   });
 
     function appendSegment(textarea, text, type) {
-      // ⭐ trigger-prefix / trigger-multi-prefix → 直接插入，不加空白
       if (type === "trigger-prefix" || type === "trigger-multi-prefix") {
         textarea.value += text;
-      } 
-      else {
-        // ⭐ 其他補全 → 自動加一個空白
-        textarea.value += " " + text;
+      } else {
+        textarea.value += text;   // 已經在外面加空白了
       }
     
-      // 游標移到最後
       textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
     }
   
