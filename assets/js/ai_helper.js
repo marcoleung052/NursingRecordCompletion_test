@@ -35,11 +35,34 @@ export function initAISuggestion(textarea, overlay) {
   
     // ⭐ trigger-prefix → 本地補全（一定要放最前面）
     if (aiRef.type === "trigger-prefix") {
-        const newText = textarea.value;
-        resetAI();
-        callAI(newText);
-        return;
+      const lastToken = text.split(/\s+/).pop();
+    
+      if (aiRef.full && aiRef.full.startsWith(lastToken)) {
+        renderOverlay(text, aiRef.full);
+    
+        // ⭐ 當最後 token == 補全文字 → 代表補全完成
+        if (lastToken === aiRef.full) {
+    
+          // 1) 寫入 textarea（這是你現在缺的）
+          textarea.value = aiRef.full;
+    
+          // 2) 清掉 overlay
+          overlay.innerHTML = "";
+    
+          // 3) 清掉 trigger-prefix 狀態
+          resetAI();
+    
+          // 4) ⭐ 手動觸發 input → callAI("Admitted") → multi-step-options
+          textarea.dispatchEvent(new Event("input"));
+    
+          return;
+        }
+    
+      } else {
+        overlay.innerHTML = "";
       }
+      return;
+    }
   
     // ⭐ multi-step-options → 本地補全
     if (aiRef.type === "multi-step-options") {
