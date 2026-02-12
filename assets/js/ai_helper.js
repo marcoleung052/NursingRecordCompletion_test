@@ -6,7 +6,7 @@ export function initAISuggestion(textarea, overlay) {
     full: null,
     steps: null,
     stepIndex: 0,
-    options: appendSegment
+    options: []
     activeIndex: 0,
     results: []
   };
