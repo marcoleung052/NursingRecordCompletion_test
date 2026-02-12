@@ -33,10 +33,10 @@ export function initAISuggestion(textarea, overlay) {
   
     const text = textarea.value;
   
-    // ⭐ trigger-prefix → 本地補全
+    // ⭐ trigger-prefix → 本地補全（一定要放最前面）
     if (aiRef.type === "trigger-prefix") {
-      const lastToken = text.split(/\s+/).pop();   // ❗ 不要 trim
-    
+      const lastToken = text.split(/\s+/).pop();
+  
       if (aiRef.full && aiRef.full.startsWith(lastToken)) {
         renderOverlay(text, aiRef.full);
       } else {
