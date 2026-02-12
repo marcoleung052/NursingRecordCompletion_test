@@ -176,20 +176,29 @@ export function initAISuggestion(textarea, overlay) {
         ? full.slice(trigger.length)
         : full;
     
-      // ⭐ 正確宣告 segment（避免 undefined）
       let segment = toInsert;
     
-      // ⭐ trigger-prefix / trigger-multi-prefix → 不加空白
+      // ⭐ 智慧空白：只有前後都沒有標點符號才加空白
       if (aiRef.type !== "trigger-prefix" && aiRef.type !== "trigger-multi-prefix") {
-        segment = " " + segment;   // 其他補全 → 自動加空白
+    
+        const lastChar = textarea.value.slice(-1);
+        const firstChar = segment[0];
+    
+        const punctuation = ".,;!?，。；！？、";
+    
+        const needSpaceBefore = !punctuation.includes(lastChar);
+        const needSpaceAfter = !punctuation.includes(firstChar);
+    
+        if (needSpaceBefore && needSpaceAfter) {
+          segment = " " + segment;
+        }
       }
     
       appendSegment(textarea, segment, aiRef.type);
       overlay.innerHTML = "";
     
-      // ⭐ multi-step-options → 正確 push segment（不會重複）
       if (aiRef.type === "multi-step-options") {
-        aiRef.results.push(segment);   // ← 這裡才是你真正 append 的內容
+        aiRef.results.push(segment);
         aiRef.stepIndex++;
     
         if (aiRef.stepIndex < aiRef.steps.length) {
