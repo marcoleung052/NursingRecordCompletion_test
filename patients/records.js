@@ -66,6 +66,15 @@ if (location.pathname.includes("add_record.html")) {
   const params = new URLSearchParams(location.search);
   const patientId = params.get("id");
 
+  document.addEventListener("DOMContentLoaded", () => {
+    const input = document.getElementById("datetime");
+  
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); // ⭐ 修正時區
+  
+    input.value = now.toISOString().slice(0, 16); // yyyy-MM-ddTHH:mm
+  });
+
   document.getElementById("backBtn").href = `patient_overview.html?id=${patientId}`;
 
   document.getElementById("recordForm").onsubmit = async e => {
@@ -124,6 +133,15 @@ if (location.pathname.includes("edit_record.html")) {
   }
 
   loadRecord();
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const input = document.getElementById("datetime");
+  
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); // ⭐ 修正時區
+  
+    input.value = now.toISOString().slice(0, 16); // yyyy-MM-ddTHH:mm
+  });
 
   document.getElementById("editRecordForm").onsubmit = async e => {
     e.preventDefault();
