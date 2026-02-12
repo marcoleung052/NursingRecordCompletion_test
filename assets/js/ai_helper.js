@@ -226,6 +226,7 @@ export function initAISuggestion(textarea, overlay) {
 
       appendSegment(textarea, segment, aiRef.type);
       overlay.innerHTML = "";
+      textarea.dispatchEvent(new Event("input"));
 
       // ⭐ multi-step-options：正確 push，不重複
       if (aiRef.type === "multi-step-options") {
