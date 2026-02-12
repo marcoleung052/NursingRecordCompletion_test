@@ -38,29 +38,22 @@ export function initAISuggestion(textarea, overlay) {
       const lastToken = text.split(/\s+/).pop();
     
       if (aiRef.full && aiRef.full.startsWith(lastToken)) {
-        renderOverlay(text, aiRef.full);
     
-        // ⭐ 當最後 token == 補全文字 → 代表補全完成
-        if (lastToken === aiRef.full) {
+        // ⭐ 直接寫進 textarea（不要等 lastToken === full）
+        textarea.value = aiRef.full;
     
-          // 1) 寫入 textarea（這是你現在缺的）
-          textarea.value = aiRef.full;
-    
-          // 2) 清掉 overlay
-          overlay.innerHTML = "";
-    
-          // 3) 清掉 trigger-prefix 狀態
-          resetAI();
-    
-          // 4) ⭐ 手動觸發 input → callAI("Admitted") → multi-step-options
-          textarea.dispatchEvent(new Event("input"));
-    
-          return;
-        }
-    
-      } else {
+        // ⭐ 清掉 overlay
         overlay.innerHTML = "";
+    
+        // ⭐ 清掉 trigger-prefix 狀態
+        resetAI();
+    
+        // ⭐ 觸發 input → callAI("Admitted")
+        textarea.dispatchEvent(new Event("input"));
+        return;
       }
+    
+      overlay.innerHTML = "";
       return;
     }
   
