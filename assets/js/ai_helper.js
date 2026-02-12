@@ -30,18 +30,30 @@ export function initAISuggestion(textarea, overlay) {
   // ---------------------------
   textarea.addEventListener("input", () => {
     clearTimeout(typingTimer);
-
+  
     const text = textarea.value;
-
-    // ⭐ multi-step-options → 本地補全，不 callAI
-    if (aiRef.type === "multi-step-options") {
+  
+    // ⭐ trigger-prefix → 本地補全
+    if (aiRef.type === "trigger-prefix") {
       const lastToken = text.split(/\s+/).pop();   // ❗ 不要 trim
+  
+      if (aiRef.full && aiRef.full.startsWith(lastToken)) {
+        renderOverlay(text, aiRef.full);
+      } else {
+        overlay.innerHTML = "";
+      }
+      return;
+    }
+  
+    // ⭐ multi-step-options → 本地補全
+    if (aiRef.type === "multi-step-options") {
+      const lastToken = text.split(/\s+/).pop();
       if (aiRef.full.startsWith(lastToken)) {
         renderOverlay(text, aiRef.full);
       }
       return;
     }
-
+  
     // ⭐ fixed-sequence / multi-options → 本地補全
     if (aiRef.type === "fixed-sequence" || aiRef.type === "multi-options") {
       if (aiRef.full) {
@@ -49,13 +61,13 @@ export function initAISuggestion(textarea, overlay) {
         return;
       }
     }
-
+  
     if (!text.trim()) {
       overlay.innerHTML = "";
       resetAI();
       return;
     }
-
+  
     typingTimer = setTimeout(() => callAI(text), FRONTEND_DELAY);
   });
 
