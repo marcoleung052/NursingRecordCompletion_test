@@ -230,6 +230,9 @@ export function initAISuggestion(textarea, overlay) {
       const prefix = textarea.value.endsWith("/n")
         ? "\n"
         : "";
+      prefix = textarea.value.endsWith("\" \"")
+        ? " "
+        : "";
     
       textarea.value = textarea.value + prefix + text;
     
