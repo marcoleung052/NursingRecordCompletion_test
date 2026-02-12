@@ -207,28 +207,6 @@ export function initAISuggestion(textarea, overlay) {
     
       resetAI();
     }
-
-
-      // ---------------------------
-      // trigger-prefix → 插入後 callAI("張眼")
-      // ---------------------------
-      if (aiRef.type === "trigger-prefix") {
-        const newText = textarea.value;
-        resetAI();
-        callAI(newText);
-        return;
-      }
-
-      if (aiRef.type === "trigger-multi-prefix") {
-        const newText = textarea.value;
-        resetAI();
-        callAI(newText);
-        return;
-      }
-
-
-      resetAI();
-    }
   });
 
     function appendSegment(textarea, text, type) {
