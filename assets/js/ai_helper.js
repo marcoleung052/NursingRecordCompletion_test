@@ -59,11 +59,12 @@ export function initAISuggestion(textarea, overlay) {
   
     // ⭐ multi-step-options → 本地補全
     if (aiRef.type === "multi-step-options") {
+      // ⭐ 不要 return，否則 Tab handler 永遠不會跑
       const lastToken = text.split(/\s+/).pop();
-      if (aiRef.full.startsWith(lastToken)) {
+      if (aiRef.full && aiRef.full.startsWith(lastToken)) {
         renderOverlay(text, aiRef.full);
       }
-      return;
+      // ❗ 不 return
     }
   
     // ⭐ fixed-sequence / multi-options → 本地補全
