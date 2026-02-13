@@ -231,8 +231,30 @@ export function initAISuggestion(textarea, overlay) {
       overlay.innerHTML = "";
       textarea.dispatchEvent(new Event("input"));
 
-      // ⭐ multi-step-options：正確 push，不重複
+      // ⭐ multi-step-options：STEP → option → STEP → option
       if (aiRef.type === "multi-step-options") {
+      
+        // 如果正在選 STEP label
+        if (aiRef.waitingForStepLabel) {
+          const chosenLabel = aiRef.full; // 使用者選的 STEP label
+      
+          // 插入 label（前面加空白）
+          appendSegment(textarea, " " + chosenLabel, aiRef.type);
+      
+          // 找到該 STEP
+          const step = aiRef.steps[aiRef.stepIndex];
+      
+          // 顯示該 STEP 的 options
+          aiRef.options = step.options;
+          aiRef.activeIndex = 0;
+          aiRef.full = replaceTimeWithInput(aiRef.options[0]);
+      
+          renderOverlay(textarea.value, textarea.value + " " + aiRef.full);
+      
+          aiRef.waitingForStepLabel = false;
+          return;
+        }
+      
         // ⭐ 插入 option
         aiRef.results.push(segment);
       
@@ -241,21 +263,20 @@ export function initAISuggestion(textarea, overlay) {
       
         if (aiRef.stepIndex < aiRef.steps.length) {
       
-          // ⭐ 下一個 STEP label（不插入，只顯示選單）
+          // ⭐ 顯示下一個 STEP label（讓使用者選）
           const nextStep = aiRef.steps[aiRef.stepIndex];
       
-          // ⭐ 下一個 STEP 的 options
-          aiRef.options = nextStep.options;
+          aiRef.options = [nextStep.label];
           aiRef.activeIndex = 0;
-          aiRef.full = replaceTimeWithInput(aiRef.options[0]);
+          aiRef.full = nextStep.label;
       
-          // ⭐ 顯示 overlay（prefix = textarea.value）
-          const prefix = textarea.value;
-          renderOverlay(prefix, prefix + aiRef.full);
+          renderOverlay(textarea.value, textarea.value + " " + aiRef.full);
       
-        } else {
-          resetAI();
+          aiRef.waitingForStepLabel = true;
+          return;
         }
+      
+        resetAI();
         return;
       }
 
