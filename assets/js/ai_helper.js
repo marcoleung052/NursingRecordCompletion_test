@@ -152,7 +152,10 @@ export function initAISuggestion(textarea, overlay) {
     if (skill.type === "multi-step-options") {
       aiRef.steps = skill.steps;
       aiRef.stepIndex = 0;
-      aiRef.options = aiRef.steps[0].options;
+      // ⭐ 第一個 STEP：直接進入 option，不插入 label
+      aiRef.stepIndex = 0;
+      aiRef.options = aiRef.steps[0].options;   // 只顯示 option
+      aiRef.activeIndex = 0;
       aiRef.full = replaceTimeWithInput(aiRef.options[0]);
       aiRef.results = [];   // ⭐ reset results
       const prefix = ""; 
@@ -230,16 +233,26 @@ export function initAISuggestion(textarea, overlay) {
 
       // ⭐ multi-step-options：正確 push，不重複
       if (aiRef.type === "multi-step-options") {
+        // ⭐ 插入 option
         aiRef.results.push(segment);
+      
+        // ⭐ 下一個 STEP
         aiRef.stepIndex++;
-
+      
         if (aiRef.stepIndex < aiRef.steps.length) {
-          aiRef.options = aiRef.steps[aiRef.stepIndex].options;
+      
+          // ⭐ 下一個 STEP label（不插入，只顯示選單）
+          const nextStep = aiRef.steps[aiRef.stepIndex];
+      
+          // ⭐ 下一個 STEP 的 options
+          aiRef.options = nextStep.options;
           aiRef.activeIndex = 0;
           aiRef.full = replaceTimeWithInput(aiRef.options[0]);
-
+      
+          // ⭐ 顯示 overlay（prefix = textarea.value）
           const prefix = textarea.value;
           renderOverlay(prefix, prefix + aiRef.full);
+      
         } else {
           resetAI();
         }
