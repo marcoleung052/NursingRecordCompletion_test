@@ -30,43 +30,15 @@ export function initAISuggestion(textarea, overlay) {
   // ---------------------------
   textarea.addEventListener("input", () => {
     clearTimeout(typingTimer);
-  
+
     const text = textarea.value;
-  
-    // ⭐ trigger-prefix → 本地補全（一定要放最前面）
-    if (aiRef.type === "trigger-prefix") {
-      const lastToken = text.split(/\s+/).pop();
-    
-      if (aiRef.full && aiRef.full.startsWith(lastToken)) {
-    
-        // ⭐ 直接寫進 textarea（不要等 lastToken === full）
-        textarea.value = aiRef.full;
-    
-        // ⭐ 清掉 overlay
-        overlay.innerHTML = "";
-    
-        // ⭐ 清掉 trigger-prefix 狀態
-        resetAI();
-    
-        // ⭐ 觸發 input → callAI("Admitted")
-        textarea.dispatchEvent(new Event("input"));
-        return;
-      }
-    
-      overlay.innerHTML = "";
+
+    // ⭐ multi-step-options → 本地補全，不 callAI
+    if (aiRef.type === "multi-step-options") {
+      if (aiRef.full) renderOverlay(text, aiRef.full);
       return;
     }
-  
-    // ⭐ multi-step-options → 本地補全
-    if (aiRef.type === "multi-step-options") {
-      // ⭐ 不要 return，否則 Tab handler 永遠不會跑
-      const lastToken = text.split(/\s+/).pop();
-      if (aiRef.full && aiRef.full.startsWith(lastToken)) {
-        renderOverlay(text, aiRef.full);
-      }
-      // ❗ 不 return
-    }
-  
+
     // ⭐ fixed-sequence / multi-options → 本地補全
     if (aiRef.type === "fixed-sequence" || aiRef.type === "multi-options") {
       if (aiRef.full) {
@@ -74,13 +46,13 @@ export function initAISuggestion(textarea, overlay) {
         return;
       }
     }
-  
+
     if (!text.trim()) {
       overlay.innerHTML = "";
       resetAI();
       return;
     }
-  
+
     typingTimer = setTimeout(() => callAI(text), FRONTEND_DELAY);
   });
 
@@ -153,10 +125,7 @@ export function initAISuggestion(textarea, overlay) {
     if (skill.type === "multi-step-options") {
       aiRef.steps = skill.steps;
       aiRef.stepIndex = 0;
-      // ⭐ 第一個 STEP：直接進入 option，不插入 label
-      aiRef.stepIndex = 0;
-      aiRef.options = aiRef.steps[0].options;   // 只顯示 option
-      aiRef.activeIndex = 0;
+      aiRef.options = aiRef.steps[0].options;
       aiRef.full = replaceTimeWithInput(aiRef.options[0]);
       aiRef.results = [];   // ⭐ reset results
       const prefix = ""; 
@@ -198,94 +167,61 @@ export function initAISuggestion(textarea, overlay) {
 
     if (e.key === "Tab") {
       e.preventDefault();
-
+    
       const full = aiRef.full;
       const text = textarea.value;
-
-      // 取使用者輸入的最後一段（不會要求你手動加空白）
-      const trigger = text.trim().split(/\s+/).pop();
-
-      // ⭐ 不會重複宣告 toInsert
-      let toInsert = full.startsWith(trigger)
-        ? full.slice(trigger.length)
-        : full;
-
-      // ⭐ 正確宣告 segment
-      let segment = toInsert;
-
-      // ⭐ 智慧空白：只有前後都沒有標點符號才加空白
+    
+      // 使用者輸入的最後一段（trigger）
+      const trigger = text.split(/[\s\n]/).pop();
+    
+      // ⭐ 找到 trigger 的實際位置（不會刪錯）
+      const triggerIndex = text.lastIndexOf(trigger);
+    
+      // ⭐ 刪掉 trigger（這是唯一正確的方式）
+      if (triggerIndex !== -1) {
+        textarea.value = text.slice(0, triggerIndex);
+      }
+    
+      // ⭐ 直接使用 full 當補全
+      let segment = full;
+    
+      // ⭐ 智慧空白：只有前後都沒有標點才加空白
+      const lastChar = textarea.value.slice(-1);
+      const firstChar = segment[0];
+      const punctuation = ".,;!?，。；！？、";
+    
+      const needSpaceBefore = !punctuation.includes(lastChar);
+      const needSpaceAfter = !punctuation.includes(firstChar);
+    
       if (aiRef.type !== "trigger-prefix" && aiRef.type !== "trigger-multi-prefix") {
-
-        const lastChar = textarea.value.slice(-1);
-        const firstChar = segment[0];
-        const punctuation = ".,;!?，。；！？、";
-
-        const needSpaceBefore = !punctuation.includes(lastChar);
-        const needSpaceAfter = !punctuation.includes(firstChar);
-
         if (needSpaceBefore && needSpaceAfter) {
           segment = " " + segment;
         }
       }
-
+    
+      // ⭐ 插入補全文字
+      textarea.value += segment;
+      textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
       overlay.innerHTML = "";
-
-      if (aiRef.type === "trigger-prefix") {
-        e.preventDefault();
-      
-        appendSegment(textarea, segment, aiRef.type);
-        overlay.innerHTML = "";
-        resetAI();
-        return;
-      }
-
-      // ⭐ multi-step-options：STEP → option → STEP → option
+    
+      // ⭐ multi-step-options：正確 push，不重複
       if (aiRef.type === "multi-step-options") {
-      
-        // 如果正在選 STEP label
-        if (aiRef.waitingForStepLabel) {
-          const chosenLabel = aiRef.full;
-      
-          // 插入 label
-          appendSegment(textarea, " " + chosenLabel, aiRef.type);
-      
-          // 顯示該 STEP 的 options
-          const step = aiRef.steps[aiRef.stepIndex];
-          aiRef.options = step.options;
+        aiRef.results.push(segment);
+        aiRef.stepIndex++;
+    
+        if (aiRef.stepIndex < aiRef.steps.length) {
+          aiRef.options = aiRef.steps[aiRef.stepIndex].options;
           aiRef.activeIndex = 0;
           aiRef.full = replaceTimeWithInput(aiRef.options[0]);
-      
-          renderOverlay(textarea.value, textarea.value + " " + aiRef.full);
-      
-          aiRef.waitingForStepLabel = false;
-          return;
+    
+          const prefix = textarea.value;
+          renderOverlay(prefix, prefix + aiRef.full);
+        } else {
+          resetAI();
         }
-      
-        // ⭐ 插入 option（只有這裡插入一次）
-        appendSegment(textarea, segment, aiRef.type);
-        aiRef.results.push(segment);
-      
-        // 下一個 STEP
-        aiRef.stepIndex++;
-      
-        if (aiRef.stepIndex < aiRef.steps.length) {
-          const nextStep = aiRef.steps[aiRef.stepIndex];
-      
-          // 顯示下一個 STEP label
-          aiRef.options = [nextStep.label];
-          aiRef.activeIndex = 0;
-          aiRef.full = nextStep.label;
-      
-          renderOverlay(textarea.value, textarea.value + " " + aiRef.full);
-      
-          aiRef.waitingForStepLabel = true;
-          return;
-        }
-      
-        resetAI();
         return;
       }
-
+    
       resetAI();
     }
   });
