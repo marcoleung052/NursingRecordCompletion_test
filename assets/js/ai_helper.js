@@ -230,6 +230,15 @@ export function initAISuggestion(textarea, overlay) {
 
       overlay.innerHTML = "";
 
+      if (aiRef.type === "trigger-prefix") {
+        e.preventDefault();
+      
+        appendSegment(textarea, segment, aiRef.type);
+        overlay.innerHTML = "";
+        resetAI();
+        return;
+      }
+
       // ⭐ multi-step-options：STEP → option → STEP → option
       if (aiRef.type === "multi-step-options") {
       
