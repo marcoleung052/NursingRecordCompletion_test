@@ -212,23 +212,32 @@ export function initAISuggestion(textarea, overlay) {
     
       // ⭐ multi-step-options：正確 push，不重複
       if (aiRef.type === "multi-step-options") {
+        const chosen = aiRef.options[aiRef.activeIndex];
+      
+        // 記錄結果
         aiRef.results.push({
-          label: aiRef.steps[aiRef.stepIndex].label,
-          value: segment
+          step: aiRef.steps[aiRef.stepIndex].label,
+          value: chosen
         });
+      
+        // 插入文字
+        textarea.value += chosen;
+        textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
       
         aiRef.stepIndex++;
       
+        // 如果還有下一步
         if (aiRef.stepIndex < aiRef.steps.length) {
           aiRef.options = aiRef.steps[aiRef.stepIndex].options;
           aiRef.activeIndex = 0;
-          aiRef.full = replaceTimeWithInput(aiRef.options[0]);
+          aiRef.full = aiRef.options[0];
       
-          const prefix = textarea.value;
-          renderOverlay(prefix, prefix + aiRef.full);
+          renderOverlay(textarea.value, textarea.value + aiRef.full);
         } else {
           resetAI();
         }
+      
+        e.preventDefault();
         return;
       }
       resetAI();
