@@ -289,7 +289,6 @@ export function initAISuggestion(textarea, overlay) {
         return;
       }
       resetAI();
-    }
   });
 
     function appendSegment(textarea, text, type) {
