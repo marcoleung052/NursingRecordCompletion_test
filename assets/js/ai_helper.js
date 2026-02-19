@@ -125,11 +125,17 @@ export function initAISuggestion(textarea, overlay) {
     if (skill.type === "multi-step-options") {
       aiRef.steps = skill.steps;
       aiRef.stepIndex = 0;
+      aiRef.results = [];
+      
+      // 第一步的 options
       aiRef.options = aiRef.steps[0].options;
+      aiRef.activeIndex = 0;
+      
+      // 第一個 option
       aiRef.full = replaceTimeWithInput(aiRef.options[0]);
-      aiRef.results = [];   // ⭐ reset results
-      const prefix = ""; 
-      renderOverlay(prefix, prefix + aiRef.full);
+      
+      // 顯示補全
+      renderOverlay(textarea.value, aiRef.full);
       return;
     }
 
