@@ -206,14 +206,18 @@ export function initAISuggestion(textarea, overlay) {
     
       // ⭐ multi-step-options：正確 push，不重複
       if (aiRef.type === "multi-step-options") {
-        aiRef.results.push(segment);
+        aiRef.results.push({
+          label: aiRef.steps[aiRef.stepIndex].label,
+          value: segment
+        });
+      
         aiRef.stepIndex++;
-    
+      
         if (aiRef.stepIndex < aiRef.steps.length) {
           aiRef.options = aiRef.steps[aiRef.stepIndex].options;
           aiRef.activeIndex = 0;
           aiRef.full = replaceTimeWithInput(aiRef.options[0]);
-    
+      
           const prefix = textarea.value;
           renderOverlay(prefix, prefix + aiRef.full);
         } else {
@@ -221,7 +225,6 @@ export function initAISuggestion(textarea, overlay) {
         }
         return;
       }
-    
       resetAI();
     }
   });
