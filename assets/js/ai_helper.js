@@ -126,18 +126,16 @@ export function initAISuggestion(textarea, overlay) {
       aiRef.steps = skill.steps;
       aiRef.stepIndex = 0;
       aiRef.results = [];
-      
-      // 第一步的 options
+    
+      // 第一步永遠只有一個 option
       aiRef.options = aiRef.steps[0].options;
       aiRef.activeIndex = 0;
-      
-      // 第一個 option
-      aiRef.full = replaceTimeWithInput(aiRef.options[0]);
-      
-      // 顯示補全
+      aiRef.full = aiRef.options[0];
+    
       renderOverlay(textarea.value, aiRef.full);
       return;
     }
+
 
     // ---------------------------
     // ai-multi-options
@@ -216,7 +214,7 @@ export function initAISuggestion(textarea, overlay) {
       
         // 記錄結果
         aiRef.results.push({
-          step: aiRef.steps[aiRef.stepIndex].label,
+          label: aiRef.steps[aiRef.stepIndex].label,
           value: chosen
         });
       
@@ -224,19 +222,21 @@ export function initAISuggestion(textarea, overlay) {
         textarea.value += chosen;
         textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
       
+        // 下一步
         aiRef.stepIndex++;
       
-        // 如果還有下一步
-        if (aiRef.stepIndex < aiRef.steps.length) {
-          aiRef.options = aiRef.steps[aiRef.stepIndex].options;
-          aiRef.activeIndex = 0;
-          aiRef.full = aiRef.options[0];
-      
-          renderOverlay(textarea.value, textarea.value + aiRef.full);
-        } else {
+        // 如果沒有下一步 → 結束
+        if (aiRef.stepIndex >= aiRef.steps.length) {
           resetAI();
+          return;
         }
       
+        // 下一步的 options
+        aiRef.options = aiRef.steps[aiRef.stepIndex].options;
+        aiRef.activeIndex = 0;
+        aiRef.full = aiRef.options[0];
+      
+        renderOverlay(textarea.value, textarea.value + aiRef.full);
         e.preventDefault();
         return;
       }
