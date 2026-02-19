@@ -123,12 +123,13 @@ export function initAISuggestion(textarea, overlay) {
     // multi-step-options
     // ---------------------------
     if (skill.type === "multi-step-options") {
+      aiRef.type = "multi-step-options";
       aiRef.steps = skill.steps;
-      aiRef.stepIndex = 0;
+      aiRef.phase = 0; // 0=固定步驟, 1=label 選單, 2=label.options
       aiRef.results = [];
     
-      // 第一步永遠只有一個 option
-      aiRef.options = aiRef.steps[0].options;
+      // Phase 0：固定步驟
+      aiRef.options = aiRef.steps[0].options; // ["at xx:xx,入院護理已完成"]
       aiRef.activeIndex = 0;
       aiRef.full = aiRef.options[0];
     
@@ -210,26 +211,73 @@ export function initAISuggestion(textarea, overlay) {
     
       // ⭐ multi-step-options：正確 push，不重複
       if (aiRef.type === "multi-step-options") {
-        const chosen = aiRef.options[aiRef.activeIndex];
-      
-        // 記錄結果
-        aiRef.results.push({
-          label: aiRef.steps[aiRef.stepIndex].label,
-          value: chosen
-        });
-      
-        // 插入文字
-        textarea.value += chosen;
-        textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
-      
-        // 下一步
-        aiRef.stepIndex++;
-      
-        // 如果沒有下一步 → 結束
-        if (aiRef.stepIndex >= aiRef.steps.length) {
-          resetAI();
+    
+        // Phase 0：固定步驟
+        if (aiRef.phase === 0) {
+          const chosen = aiRef.options[aiRef.activeIndex];
+    
+          textarea.value += chosen;
+          textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
+    
+          aiRef.results.push({
+            step: aiRef.steps[0].label,
+            value: chosen
+          });
+    
+          // 進入 Phase 1：顯示所有 label
+          aiRef.phase = 1;
+          aiRef.options = aiRef.steps.slice(1).map(s => s.label);
+          aiRef.activeIndex = 0;
+          aiRef.full = aiRef.options[0];
+    
+          renderOverlay(textarea.value, textarea.value + aiRef.full);
           return;
         }
+    
+        // Phase 1：label 選單 LOOP
+        if (aiRef.phase === 1) {
+          const selectedLabel = aiRef.options[aiRef.activeIndex];
+    
+          // 插入 label 本身
+          textarea.value += selectedLabel;
+          textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
+    
+          aiRef.results.push({
+            step: "label",
+            value: selectedLabel
+          });
+    
+          // 找到該 label 的 step
+          const stepObj = aiRef.steps.find(s => s.label === selectedLabel);
+    
+          // 進入 Phase 2：顯示該 label 的 options
+          aiRef.phase = 2;
+          aiRef.options = stepObj.options;
+          aiRef.activeIndex = 0;
+          aiRef.full = aiRef.options[0];
+    
+          renderOverlay(textarea.value, textarea.value + aiRef.full);
+          return;
+        }
+    
+        // Phase 2：插入 label.options → 完成
+        if (aiRef.phase === 2) {
+          const chosen = aiRef.options[aiRef.activeIndex];
+    
+          textarea.value += chosen;
+          textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
+    
+          aiRef.results.push({
+            step: "option",
+            value: chosen
+          });
+    
+          resetAI();
+          overlay.innerHTML = "";
+          return;
+        }
+      }
+
       
         // 下一步的 options
         aiRef.options = aiRef.steps[aiRef.stepIndex].options;
