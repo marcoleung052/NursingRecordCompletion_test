@@ -79,11 +79,13 @@ export function initAISuggestion(textarea, overlay) {
   }
 
   function updateStepState() {
+    // 找出尚未完成的 steps
     const remainingSteps = aiRef.steps
       .map((s, idx) => ({ ...s, originalIndex: idx }))
       .filter(s => !aiRef.completedIndices.has(s.originalIndex));
 
-    if (remainingSteps.length === 0) {
+    // 如果連當前正在選 Option 的步驟都被標記完成了，且沒有剩下的了，才重置
+    if (remainingSteps.length === 0 && aiRef.phase === "label") {
       resetAI();
       return;
     }
@@ -92,21 +94,20 @@ export function initAISuggestion(textarea, overlay) {
       aiRef.options = remainingSteps.map(s => s.label);
       aiRef.currentMapping = remainingSteps.map(s => s.originalIndex);
     } else {
-      // ⭐ 確保 currentStepIndex 不是 null 且在有效範圍內
-      if (aiRef.currentStepIndex === null) {
-          aiRef.phase = "label";
-          updateStepState();
-          return;
-      }
       const currentStep = aiRef.steps[aiRef.currentStepIndex];
-      aiRef.options = currentStep.options.map(opt => replaceTimeWithInput(opt));
+      if (currentStep) {
+        aiRef.options = currentStep.options.map(opt => replaceTimeWithInput(opt));
+      } else {
+        aiRef.phase = "label";
+        updateStepState();
+        return;
+      }
     }
 
     aiRef.activeIndex = 0;
     aiRef.full = aiRef.options[0] || null;
     renderOverlay(textarea.value, aiRef.full);
   }
-
   async function callAI(prompt) {
     const params = new URLSearchParams(window.location.search);
     const patientId = params.get("id");
@@ -182,35 +183,37 @@ export function initAISuggestion(textarea, overlay) {
 
       if (aiRef.type === "multi-step-options") {
         if (aiRef.phase === "label") {
+          // --- 情況 A：選中 Label ---
           const space = getSmartSpace(textarea.value, chosen, true);
           textarea.value += space + chosen;
           
           const selectedIdx = aiRef.currentMapping[aiRef.activeIndex];
           
-          // 標記包含自己在內的前面所有步驟為完成
-          for (let i = 0; i <= selectedIdx; i++) {
+          // ⭐ 修正：只標記「之前」的步驟為已完成，當前步驟 (selectedIdx) 先不標記
+          for (let i = 0; i < selectedIdx; i++) {
             aiRef.completedIndices.add(i);
           }
           
           aiRef.currentStepIndex = selectedIdx;
-          aiRef.phase = "option";
+          aiRef.phase = "option"; // 進入選內容階段
         } else {
+          // --- 情況 B：選中 Option ---
           const space = getSmartSpace(textarea.value, chosen, false);
           textarea.value += space + chosen;
           
+          // ⭐ 此時才正式標記當前步驟已完成
           aiRef.completedIndices.add(aiRef.currentStepIndex);
-          aiRef.phase = "label"; 
+          aiRef.phase = "label"; // 回到選 Label 階段
         }
+        // 重新計算剩下的 Label 或顯示當前的 Option
         updateStepState();
       } else {
         const text = textarea.value;
         const trigger = text.split(/[\s\n]/).pop();
         const triggerIndex = text.lastIndexOf(trigger);
         if (triggerIndex !== -1) textarea.value = text.slice(0, triggerIndex);
-        
         const space = getSmartSpace(textarea.value, chosen, false);
         textarea.value += space + chosen;
-        
         const currentContent = textarea.value;
         resetAI();
         callAI(currentContent);
