@@ -59,7 +59,10 @@ export function initAISuggestion(textarea, overlay) {
     const punctuation = ".,;!?，。；！？、 \n";
     if (punctuation.includes(lastChar)) return "";
 
-    // 規則：只有「中接中」才不加空白，其餘（中接英、英接中、英接英）皆加空白
+    // 如果強制要求加空白（例如 Option 接下一個 Label）
+    if (forceSpace) return " ";
+
+    // 規則：只有「中接中」才不加空白
     if (isChinese(lastChar) && isChinese(firstChar)) {
       return "";
     }
@@ -172,38 +175,44 @@ export function initAISuggestion(textarea, overlay) {
       renderOverlay(textarea.value, aiRef.full);
     }
 
-    if (e.key === "Tab") {
+  if (e.key === "Tab") {
       e.preventDefault();
       const chosen = aiRef.full;
 
       if (aiRef.type === "multi-step-options") {
-        // 使用智慧間距
-        const space = getSmartSpace(textarea.value, chosen);
-        textarea.value += space + chosen;
+        let space = "";
         
         if (aiRef.phase === "label") {
+          // --- 情況 A：插入 Label ---
+          // 這是從上一個 Option 接過來的，依照你的要求：強制加空白
+          space = getSmartSpace(textarea.value, chosen, true);
+          textarea.value += space + chosen;
+          
           aiRef.currentStepIndex = aiRef.currentMapping[aiRef.activeIndex];
           aiRef.phase = "option";
         } else {
+          // --- 情況 B：插入 Option ---
+          // 這是接在自己的 Label 後面，依照你的要求：中接中不加空白
+          space = getSmartSpace(textarea.value, chosen, false);
+          textarea.value += space + chosen;
+          
           aiRef.completedIndices.add(aiRef.currentStepIndex);
-          aiRef.phase = "label";
+          aiRef.phase = "label"; // 下一次 Tab 就會進入情況 A
         }
         updateStepState();
       } else {
-        // 單步模式補全
+        // --- 單步模式 ---
         const text = textarea.value;
         const trigger = text.split(/[\s\n]/).pop();
         const triggerIndex = text.lastIndexOf(trigger);
         if (triggerIndex !== -1) textarea.value = text.slice(0, triggerIndex);
         
-        // 補全後智慧間距
-        const space = getSmartSpace(textarea.value, chosen);
+        const space = getSmartSpace(textarea.value, chosen, false);
         textarea.value += space + chosen;
         
-        // 補全後立即觸發 AI 檢查是否有後續的 multi-step
         const currentContent = textarea.value;
-        resetAI(); // 先清空舊狀態
-        callAI(currentContent); // 立即檢查
+        resetAI();
+        callAI(currentContent);
       }
       textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
     }
