@@ -1,111 +1,100 @@
 import { apiFetch } from "./api.js";
 
 export function initAISuggestion(textarea, overlay) {
-  const aiRef = {
-    type: null,
-    steps: [],
-    completedIndices: new Set(),
-    currentStepIndex: null,
-    phase: "label",
-    options: [],
-    activeIndex: 0,
-    full: null,
-    currentMapping: []
-  };
+  const aiRef = {
+    type: null,
+    steps: [],
+    completedIndices: new Set(),
+    currentStepIndex: null,
+    phase: "label",
+    options: [],
+    activeIndex: 0,
+    full: null,
+    currentMapping: []
+  };
 
-  let typingTimer = null;
-  const FRONTEND_DELAY = 100;
+  let typingTimer = null;
+  const FRONTEND_DELAY = 100;
 
-  // --- 內部工具函式 ---
+  function renderOverlay(prefix, suggestion) {
+    if (!suggestion) {
+      overlay.innerHTML = "";
+      return;
+    }
+    let displaySuggestion = suggestion;
+    if (aiRef.type !== "multi-step-options" && suggestion.startsWith(prefix)) {
+      displaySuggestion = suggestion.slice(prefix.length);
+    }
 
-  function renderOverlay(prefix, suggestion) {
-    if (!suggestion) {
-      overlay.innerHTML = "";
-      return;
-    }
-    let displaySuggestion = suggestion;
-    if (aiRef.type !== "multi-step-options" && suggestion.startsWith(prefix)) {
-      displaySuggestion = suggestion.slice(prefix.length);
-    }
-    overlay.innerHTML = `
-      <span style="color: transparent;">${prefix}</span>
-      <span style="color: #ccc;">${displaySuggestion}</span>
-    `;
-  }
+    overlay.innerHTML = `
+      <span style="color: transparent;">${prefix}</span>
+      <span style="color: #ccc;">${displaySuggestion}</span>
+    `;
+  }
 
-  function resetAI() {
-    aiRef.type = null;
-    aiRef.steps = [];
-    aiRef.completedIndices.clear();
-    aiRef.currentStepIndex = null;
-    aiRef.phase = "label";
-    aiRef.options = [];
-    aiRef.activeIndex = 0;
-    aiRef.full = null;
-    overlay.innerHTML = "";
-  }
+  function resetAI() {
+    aiRef.type = null;
+    aiRef.steps = [];
+    aiRef.completedIndices.clear();
+    aiRef.currentStepIndex = null;
+    aiRef.phase = "label";
+    aiRef.options = [];
+    aiRef.activeIndex = 0;
+    aiRef.full = null;
+    overlay.innerHTML = "";
+  }
 
-  function isChinese(char) {
-    return /[\u4e00-\u9fa5]/.test(char);
-  }
+  function isChinese(char) {
+    return /[\u4e00-\u9fa5]/.test(char);
+  }
 
-  function getSmartSpace(prevText, nextText, forceSpace = false) {
-    if (!prevText || !nextText) return "";
-    const lastChar = prevText.slice(-1);
-    const firstChar = nextText[0];
-    if (/\s/.test(lastChar)) return "";
-    const punctuation = ".,;!?，。；！？、：:()（）【】[]{} \n";
-    if (punctuation.includes(lastChar) || punctuation.includes(firstChar)) return "";
-    if (forceSpace) return " ";
-    if (isChinese(lastChar) && isChinese(firstChar)) return "";
-    return " ";
-  }
+  function getSmartSpace(prevText, nextText, forceSpace = false) {
+    if (!prevText || !nextText) return "";
+    const lastChar = prevText.slice(-1); // 輸入框最後一個字
+    const firstChar = nextText[0];       // 即將插入的第一個字
 
-  function replaceTimeWithInput(text) {
-    const input = document.getElementById("datetime");
-    const now = new Date();
-    const defaultTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-    let timeHHMM = defaultTime;
-    let dateSlash = now.toLocaleDateString('zh-TW');
+    // 1. 如果最後一個字已經是空格或換行，不加空白
+    if (/\s/.test(lastChar)) return "";
 
-    if (input && input.value) {
-      const [datePart, timePart] = input.value.split("T");
-      const [hh, mm] = timePart.split(":");
-      timeHHMM = `${hh}:${mm}`;
-      dateSlash = datePart.replace(/-/g, "/");
-    }
-    return text
-      .replace(/\bxxxx\/xx\/xx xx:xx:xx\b/gi, `${dateSlash} ${timeHHMM}:00`)
-      .replace(/\bxxxx\/xx\/xx xx:xx\b/gi, `${dateSlash} ${timeHHMM}`)
-      .replace(/\bxx:xx\b/gi, timeHHMM);
-  }
+    // 2. 定義標點符號黑名單（這些符號前後通常不需要額外空格）
+    const punctuation = ".,;!?，。；！？、：:()[]{} \n";
+    
+    // 如果前一個字或後一個字是標點符號，不加空白
+    if (punctuation.includes(lastChar) || punctuation.includes(firstChar)) {
+      return "";
+    }
 
-  // ⭐ BMI 計算邏輯：從現有文字提取數值並計算結果
-  function getBMIData() {
-    const text = textarea.value;
-    // 支援：體重 70、體重:70、體重： 70.5 等格式
-    const weightMatch = text.match(/體重\s*[:：]?\s*(\d+(\.\d+)?)/);
-    const heightMatch = text.match(/身高\s*[:：]?\s*(\d+(\.\d+)?)/);
+    // 3. 情況：強制要求加空白 (用於 Option 完接下一個 Step 的 Label)
+    if (forceSpace) return " ";
 
-    if (weightMatch && heightMatch) {
-      const weight = parseFloat(weightMatch[1]);
-      const height = parseFloat(heightMatch[1]) / 100; // cm -> m
-      if (height > 0) {
-        const bmi = (weight / (height * height)).toFixed(1);
-        let result = "正常範圍";
-        if (bmi < 18.5) result = "體重過輕";
-        else if (bmi >= 24 && bmi < 27) result = "過重";
-        else if (bmi >= 27 && bmi < 30) result = "輕度肥胖";
-        else if (bmi >= 30 && bmi < 35) result = "中度肥胖";
-        else if (bmi >= 35) result = "重度肥胖";
-        
-        return { bmi: `：${bmi}`, result: `：${result}` };
-      }
-    }
-    return null;
-  }
+    // 4. 規則：只有「中接中」才不加空白
+    if (isChinese(lastChar) && isChinese(firstChar)) {
+      return "";
+    }
 
-  function updateStepState() {
+    // 5. 其餘情況 (中英、英英、英中) 皆補空白
+    return " ";
+  }
+  function replaceTimeWithInput(text) {
+    const input = document.getElementById("datetime");
+    const now = new Date();
+    const defaultTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+    let timeHHMM = defaultTime;
+    let dateSlash = now.toLocaleDateString('zh-TW');
+
+    if (input && input.value) {
+      const [datePart, timePart] = input.value.split("T");
+      const [hh, mm] = timePart.split(":");
+      timeHHMM = `${hh}:${mm}`;
+      dateSlash = datePart.replace(/-/g, "/");
+    }
+    return text
+      .replace(/\bxxxx\/xx\/xx xx:xx:xx\b/gi, `${dateSlash} ${timeHHMM}:00`)
+      .replace(/\bxxxx\/xx\/xx xx:xx\b/gi, `${dateSlash} ${timeHHMM}`)
+      .replace(/\bxx:xx\b/gi, timeHHMM);
+  }
+
+function updateStepState() {
     const remainingSteps = aiRef.steps
       .map((s, idx) => ({ ...s, originalIndex: idx }))
       .filter(s => !aiRef.completedIndices.has(s.originalIndex));
@@ -121,19 +110,33 @@ export function initAISuggestion(textarea, overlay) {
     } else {
       const currentStep = aiRef.steps[aiRef.currentStepIndex];
       if (currentStep) {
-        let options = currentStep.options;
+        let finalOptions = [...currentStep.options]; // 複製一份原始選項
 
-        // ⭐ BMI 動態攔截：如果當前步驟是 BMI 相關，直接計算並替換選項
-        const bmiData = getBMIData();
-        if (bmiData) {
+        // ⭐ 取得計算數值
+        const bmiData = calculateRawBMI(); // 假設這只回傳數字，例如 22.5
+
+        if (bmiData && currentStep.label.includes("BMI")) {
           if (currentStep.label.includes("BMI值")) {
-            options = [bmiData.bmi];
-          } else if (currentStep.label.includes("BMI結果")) {
-            options = [bmiData.result];
+            // 直接把計算結果填入第一個選項
+            finalOptions = [`：${bmiData}`];
+          } 
+          else if (currentStep.label.includes("BMI結果")) {
+            // 根據計算出的 BMI，選擇對應後端的 options 索引
+            // 假設後端順序是：0:過輕, 1:適中, 2:輕度, 3:中度
+            let index = 1; // 預設適中
+            if (bmiData < 18.5) index = 0;
+            else if (bmiData >= 24 && bmiData < 27) index = 1; // 適中/過重依據你MD定義
+            else if (bmiData >= 27 && bmiData < 30) index = 2;
+            else if (bmiData >= 30) index = 3;
+            
+            // ⭐ 這裡直接取後端給的 options[index]
+            if (finalOptions[index]) {
+              finalOptions = [finalOptions[index]]; 
+            }
           }
         }
 
-        aiRef.options = options.map(opt => replaceTimeWithInput(opt));
+        aiRef.options = finalOptions.map(opt => replaceTimeWithInput(opt));
       } else {
         aiRef.phase = "label";
         updateStepState();
@@ -146,119 +149,142 @@ export function initAISuggestion(textarea, overlay) {
     renderOverlay(textarea.value, aiRef.full);
   }
 
-  // --- API 與 事件處理 ---
-
-  async function callAI(prompt) {
-    const params = new URLSearchParams(window.location.search);
-    const patientId = params.get("id");
-
-    try {
-      const res = await apiFetch("/api/predict", {
-        method: "POST",
-        body: JSON.stringify({ prompt, patient_id: patientId })
-      });
-
-      if (!res.completions?.length) {
-        resetAI();
-        return;
-      }
-      const skill = res.completions[0];
-      aiRef.type = skill.type;
-
-      if (skill.type === "multi-step-options") {
-        aiRef.steps = skill.steps;
-        aiRef.completedIndices.clear();
-
-        const trimmedPrompt = prompt.trim();
-        const firstLabel = skill.steps[0].label;
-        
-        if (trimmedPrompt === firstLabel || trimmedPrompt.endsWith(firstLabel)) {
-          aiRef.completedIndices.add(0);
-          aiRef.currentStepIndex = 0;
-          aiRef.phase = "option";
-        } else {
-          aiRef.phase = "label";
-        }
-        updateStepState();
-      } else {
-        aiRef.options = (skill.options || skill.candidates || [skill.full || skill.text || ""])
-          .map(o => replaceTimeWithInput(o));
-        aiRef.activeIndex = 0;
-        aiRef.full = aiRef.options[0];
-        renderOverlay(prompt, aiRef.full);
-      }
-    } catch (err) {
-      console.error("AI Error:", err);
-      resetAI();
-    }
-  }
-
-  textarea.addEventListener("input", () => {
-    clearTimeout(typingTimer);
+  // 輔助函式：只負責算數字
+  function calculateRawBMI() {
     const text = textarea.value;
-    const lastChar = text.slice(-1);
-
-    if (lastChar === "\n") {
-      resetAI();
-      return;
+    const weightMatch = text.match(/體重\s*[:：]?\s*(\d+(\.\d+)?)/);
+    const heightMatch = text.match(/身高\s*[:：]?\s*(\d+(\.\d+)?)/);
+    if (weightMatch && heightMatch) {
+      const w = parseFloat(weightMatch[1]);
+      const h = parseFloat(heightMatch[1]) / 100;
+      return (w / (h * h)).toFixed(1);
     }
+    return null;
+  }
+  
+  async function callAI(prompt) {
+    const params = new URLSearchParams(window.location.search);
+    const patientId = params.get("id");
 
-    if (aiRef.type === "multi-step-options") {
-      renderOverlay(text, aiRef.full);
-      return;
-    }
-    
-    if (!text.trim()) { resetAI(); return; }
-    typingTimer = setTimeout(() => callAI(text), FRONTEND_DELAY);
-  });
+    try {
+      const res = await apiFetch("/api/predict", {
+        method: "POST",
+        body: JSON.stringify({ prompt, patient_id: patientId })
+      });
 
-  textarea.addEventListener("keydown", (e) => {
-    if (!aiRef.options || aiRef.options.length === 0) return;
+      if (!res.completions?.length) {
+        resetAI();
+        return;
+      }
+      const skill = res.completions[0];
+      aiRef.type = skill.type;
 
-    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-      e.preventDefault();
-      const dir = (e.key === "ArrowDown") ? 1 : -1;
-      aiRef.activeIndex = (aiRef.activeIndex + dir + aiRef.options.length) % aiRef.options.length;
-      aiRef.full = aiRef.options[aiRef.activeIndex];
-      renderOverlay(textarea.value, aiRef.full);
-    }
+      if (skill.type === "multi-step-options") {
+        aiRef.steps = skill.steps;
+        aiRef.completedIndices.clear();
 
-    if (e.key === "Tab") {
-      e.preventDefault();
-      const chosen = aiRef.full;
-      if (!chosen) return;
+        // ⭐ 修改：更精確地匹配第一個 Label
+        const trimmedPrompt = prompt.trim();
+        const firstLabel = skill.steps[0].label;
+        
+        if (trimmedPrompt === firstLabel || trimmedPrompt.endsWith(firstLabel)) {
+          // 如果輸入內容剛好結尾是第一個 Label (例如 Admitted)
+          aiRef.completedIndices.add(0);
+          aiRef.currentStepIndex = 0;
+          aiRef.phase = "option";
+        } else {
+          aiRef.phase = "label";
+        }
+        updateStepState();
+      } else {
+        aiRef.options = (skill.options || skill.candidates || [skill.full || skill.text || ""])
+          .map(o => replaceTimeWithInput(o));
+        aiRef.activeIndex = 0;
+        aiRef.full = aiRef.options[0];
+        renderOverlay(prompt, aiRef.full);
+      }
+    } catch (err) {
+      console.error("AI Error:", err);
+      resetAI();
+    }
+  }
 
-      if (aiRef.type === "multi-step-options") {
-        if (aiRef.phase === "label") {
-          const space = getSmartSpace(textarea.value, chosen, true);
-          textarea.value += space + chosen;
-          const selectedIdx = aiRef.currentMapping[aiRef.activeIndex];
-          for (let i = 0; i < selectedIdx; i++) {
-            aiRef.completedIndices.add(i);
-          }
-          aiRef.currentStepIndex = selectedIdx;
-          aiRef.phase = "option";
-        } else {
-          const space = getSmartSpace(textarea.value, chosen, false);
-          textarea.value += space + chosen;
-          aiRef.completedIndices.add(aiRef.currentStepIndex);
-          aiRef.phase = "label";
-        }
-        updateStepState();
-      } else {
-        const text = textarea.value;
-        const trigger = text.split(/[\s\n]/).pop();
-        const triggerIndex = text.lastIndexOf(trigger);
-        if (triggerIndex !== -1) textarea.value = text.slice(0, triggerIndex);
-        const space = getSmartSpace(textarea.value, chosen, false);
-        textarea.value += space + chosen;
-        const currentContent = textarea.value;
-        resetAI();
-        callAI(currentContent);
-      }
-      textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
-    }
+  textarea.addEventListener("input", () => {
+    clearTimeout(typingTimer);
+    const text = textarea.value;
+    const lastChar = text.slice(-1);
 
-    if (e.key === "Escape") resetAI();
-  });
+    // ⭐ 如果最後一個字是換行，強制重置狀態，準備迎接新 Skill
+    if (lastChar === "\n") {
+      resetAI();
+      return;
+    }
+
+    if (aiRef.type === "multi-step-options") {
+      renderOverlay(text, aiRef.full);
+      return;
+    }
+    
+    if (!text.trim()) { resetAI(); return; }
+    typingTimer = setTimeout(() => callAI(text), FRONTEND_DELAY);
+  });
+  
+  textarea.addEventListener("keydown", (e) => {
+    if (!aiRef.options || aiRef.options.length === 0) return;
+
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      const dir = (e.key === "ArrowDown") ? 1 : -1;
+      aiRef.activeIndex = (aiRef.activeIndex + dir + aiRef.options.length) % aiRef.options.length;
+      aiRef.full = aiRef.options[aiRef.activeIndex];
+      renderOverlay(textarea.value, aiRef.full);
+    }
+
+    if (e.key === "Tab") {
+      e.preventDefault();
+      const chosen = aiRef.full;
+      if (!chosen) return;
+
+      if (aiRef.type === "multi-step-options") {
+        if (aiRef.phase === "label") {
+          // --- 情況 A：選中 Label ---
+          const space = getSmartSpace(textarea.value, chosen, true);
+          textarea.value += space + chosen;
+          
+          const selectedIdx = aiRef.currentMapping[aiRef.activeIndex];
+          
+          // ⭐ 修正：只標記「之前」的步驟為已完成，當前步驟 (selectedIdx) 先不標記
+          for (let i = 0; i < selectedIdx; i++) {
+            aiRef.completedIndices.add(i);
+          }
+          
+          aiRef.currentStepIndex = selectedIdx;
+          aiRef.phase = "option"; // 進入選內容階段
+        } else {
+          // --- 情況 B：選中 Option ---
+          const space = getSmartSpace(textarea.value, chosen, false);
+          textarea.value += space + chosen;
+          
+          // ⭐ 此時才正式標記當前步驟已完成
+          aiRef.completedIndices.add(aiRef.currentStepIndex);
+          aiRef.phase = "label"; // 回到選 Label 階段
+        }
+        // 重新計算剩下的 Label 或顯示當前的 Option
+        updateStepState();
+      } else {
+        const text = textarea.value;
+        const trigger = text.split(/[\s\n]/).pop();
+        const triggerIndex = text.lastIndexOf(trigger);
+        if (triggerIndex !== -1) textarea.value = text.slice(0, triggerIndex);
+        const space = getSmartSpace(textarea.value, chosen, false);
+        textarea.value += space + chosen;
+        const currentContent = textarea.value;
+        resetAI();
+        callAI(currentContent);
+      }
+      textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
+    }
+
+    if (e.key === "Escape") resetAI();
+  });
 }
