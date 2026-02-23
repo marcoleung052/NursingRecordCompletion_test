@@ -173,14 +173,24 @@ export function initAISuggestion(textarea, overlay) {
 
   textarea.addEventListener("input", () => {
     clearTimeout(typingTimer);
-    if (aiRef.type === "multi-step-options") {
-      renderOverlay(textarea.value, aiRef.full);
+    const text = textarea.value;
+    const lastChar = text.slice(-1);
+
+    // ⭐ 如果最後一個字是換行，強制重置狀態，準備迎接新 Skill
+    if (lastChar === "\n") {
+      resetAI();
       return;
     }
-    if (!textarea.value.trim()) { resetAI(); return; }
-    typingTimer = setTimeout(() => callAI(textarea.value), FRONTEND_DELAY);
-  });
 
+    if (aiRef.type === "multi-step-options") {
+      renderOverlay(text, aiRef.full);
+      return;
+    }
+    
+    if (!text.trim()) { resetAI(); return; }
+    typingTimer = setTimeout(() => callAI(text), FRONTEND_DELAY);
+  });
+  
   textarea.addEventListener("keydown", (e) => {
     if (!aiRef.options || aiRef.options.length === 0) return;
 
