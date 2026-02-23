@@ -197,21 +197,28 @@ export function initAISuggestion(textarea, overlay) {
         let space = "";
         
         if (aiRef.phase === "label") {
-          // 情況 A：插入 Label (Option 接下一個 Label)
-          // 依照要求：強制補空白
+          // --- 情況 A：選中 Label ---
           space = getSmartSpace(textarea.value, chosen, true);
           textarea.value += space + chosen;
           
-          aiRef.currentStepIndex = aiRef.currentMapping[aiRef.activeIndex];
+          // 取得當前選中的原始索引
+          const selectedIdx = aiRef.currentMapping[aiRef.activeIndex];
+          
+          // ⭐ 核心修正：將此索引之前的所有步驟都標記為已完成 (跳過)
+          for (let i = 0; i <= selectedIdx; i++) {
+            aiRef.completedIndices.add(i);
+          }
+          
+          aiRef.currentStepIndex = selectedIdx;
           aiRef.phase = "option";
         } else {
-          // 情況 B：插入 Option (接在自己的 Label 後面)
-          // 依照要求：中接中不加空白，其餘加空白
+          // --- 情況 B：選中 Option ---
           space = getSmartSpace(textarea.value, chosen, false);
           textarea.value += space + chosen;
           
+          // 標記該步驟已完成（其實在選 Label 時就加過了，這裡確保萬無一失）
           aiRef.completedIndices.add(aiRef.currentStepIndex);
-          aiRef.phase = "label"; // 下一個 Tab 將進入情況 A，強制補空白
+          aiRef.phase = "label"; 
         }
         updateStepState();
       } else {
