@@ -52,7 +52,7 @@ export function initAISuggestion(textarea, overlay) {
     if (!prevText || !nextText) return "";
     const lastChar = prevText.slice(-1);
     const firstChar = nextText[0];
-    const punctuation = ".,;!?，。；！？、 \n";
+    const punctuation = ".,;!?:，。；！？、： \n";
     if (punctuation.includes(lastChar)) return "";
     if (forceSpace) return " ";
     if (isChinese(lastChar) && isChinese(firstChar)) return "";
