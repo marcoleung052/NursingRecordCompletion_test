@@ -50,15 +50,31 @@ export function initAISuggestion(textarea, overlay) {
 
   function getSmartSpace(prevText, nextText, forceSpace = false) {
     if (!prevText || !nextText) return "";
-    const lastChar = prevText.slice(-1);
-    const firstChar = nextText[0];
-    const punctuation = ".,;!?:，。；！？、： \n";
-    if (punctuation.includes(lastChar)) return "";
+    const lastChar = prevText.slice(-1); // 輸入框最後一個字
+    const firstChar = nextText[0];       // 即將插入的第一個字
+
+    // 1. 如果最後一個字已經是空格或換行，不加空白
+    if (/\s/.test(lastChar)) return "";
+
+    // 2. 定義標點符號黑名單（這些符號前後通常不需要額外空格）
+    const punctuation = ".,;!?，。；！？、：:()[]{} \n";
+    
+    // 如果前一個字或後一個字是標點符號，不加空白
+    if (punctuation.includes(lastChar) || punctuation.includes(firstChar)) {
+      return "";
+    }
+
+    // 3. 情況：強制要求加空白 (用於 Option 完接下一個 Step 的 Label)
     if (forceSpace) return " ";
-    if (isChinese(lastChar) && isChinese(firstChar)) return "";
+
+    // 4. 規則：只有「中接中」才不加空白
+    if (isChinese(lastChar) && isChinese(firstChar)) {
+      return "";
+    }
+
+    // 5. 其餘情況 (中英、英英、英中) 皆補空白
     return " ";
   }
-
   function replaceTimeWithInput(text) {
     const input = document.getElementById("datetime");
     const now = new Date();
