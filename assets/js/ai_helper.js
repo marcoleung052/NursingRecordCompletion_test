@@ -5,7 +5,7 @@ export function initAISuggestion(textarea, overlay) {
     type: null,
     full: null,
     steps: null,
-    stepIndex: 0,
+    phase: 0, // 0: 第一步(固定), 1: 選擇 label, 2: 選擇該 label 的內容
     options: [],
     activeIndex: 0,
     results: []
@@ -15,6 +15,12 @@ export function initAISuggestion(textarea, overlay) {
   const FRONTEND_DELAY = 100;
 
   function renderOverlay(prefix, full) {
+    if (!full) {
+      overlay.innerHTML = "";
+      return;
+    }
+    // 如果 full 已經包含 prefix，就切掉 prefix 顯示灰色後綴
+    // 如果不包含（例如多步驟切換中），則在 prefix 後面直接顯示灰色文字
     const suffix = full.startsWith(prefix)
       ? full.slice(prefix.length)
       : full;
@@ -30,21 +36,12 @@ export function initAISuggestion(textarea, overlay) {
   // ---------------------------
   textarea.addEventListener("input", () => {
     clearTimeout(typingTimer);
-
     const text = textarea.value;
 
-    // ⭐ multi-step-options → 本地補全，不 callAI
+    // 如果正在進行多步驟補全，不 call AI，僅更新 overlay
     if (aiRef.type === "multi-step-options") {
-      if (aiRef.full) renderOverlay(text, aiRef.full);
+      renderOverlay(text, text + (aiRef.full || ""));
       return;
-    }
-
-    // ⭐ fixed-sequence / multi-options → 本地補全
-    if (aiRef.type === "fixed-sequence" || aiRef.type === "multi-options") {
-      if (aiRef.full) {
-        renderOverlay(text, aiRef.full);
-        return;
-      }
     }
 
     if (!text.trim()) {
@@ -60,92 +57,53 @@ export function initAISuggestion(textarea, overlay) {
   // call backend
   // ---------------------------
   async function callAI(prompt) {
-    renderOverlay(prompt, "(正在補全…)");
+    renderOverlay(prompt, " (正在補全…)");
     const params = new URLSearchParams(window.location.search);
     const patientId = params.get("id");
 
-    const res = await apiFetch("/api/predict", {
-      method: "POST",
-      body: JSON.stringify({
-        prompt,
-        patient_id: patientId
-      })
-    });
+    try {
+      const res = await apiFetch("/api/predict", {
+        method: "POST",
+        body: JSON.stringify({ prompt, patient_id: patientId })
+      });
 
+      if (!res.completions || res.completions.length === 0) return;
+      const skill = res.completions[0];
+      aiRef.type = skill.type;
 
-    const skill = res.completions[0];
-    aiRef.type = skill.type;
+      if (skill.type === "multi-step-options") {
+        aiRef.steps = skill.steps;
+        aiRef.phase = 0; 
+        aiRef.results = [];
+        // 第一步的選項
+        aiRef.options = skill.steps[0].options.map(opt => replaceTimeWithInput(opt));
+        aiRef.activeIndex = 0;
+        aiRef.full = aiRef.options[0];
+        renderOverlay(prompt, prompt + aiRef.full);
+        return;
+      }
 
-    // ---------------------------
-    // trigger-prefix
-    // ---------------------------
-    if (skill.type === "trigger-prefix") {
-      aiRef.full = replaceTimeWithInput(skill.full);
-      aiRef.options = [aiRef.full];
+      // 其他單步模式處理
+      if (skill.type === "trigger-prefix") {
+        aiRef.full = replaceTimeWithInput(skill.full);
+        aiRef.options = [aiRef.full];
+      } else if (skill.type === "fixed-sequence") {
+        aiRef.full = replaceTimeWithInput(skill.text);
+        aiRef.options = [aiRef.full];
+      } else if (skill.type === "trigger-multi-prefix") {
+        aiRef.options = skill.candidates.map(c => replaceTimeWithInput(c));
+        aiRef.full = aiRef.options[0];
+      } else if (skill.type === "multi-options" || skill.type === "ai-multi-options") {
+        aiRef.options = skill.options.map(o => replaceTimeWithInput(o));
+        aiRef.full = aiRef.options[0];
+      }
+      
       aiRef.activeIndex = 0;
       renderOverlay(prompt, aiRef.full);
-      return;
-    }
 
-    // ---------------------------
-    // fixed-sequence
-    // ---------------------------
-    if (skill.type === "fixed-sequence") {
-      aiRef.full = replaceTimeWithInput(skill.text);
-      renderOverlay(prompt, aiRef.full);
-      return;
-    }
-
-    // ---------------------------
-    // trigger-multi-prefix（多選補全）
-    // ---------------------------
-    if (skill.type === "trigger-multi-prefix") {
-      aiRef.options = skill.candidates;
-      aiRef.activeIndex = 0;
-      aiRef.full = replaceTimeWithInput(aiRef.options[0]);
-    
-      // 顯示第一個候選
-      renderOverlay(prompt, aiRef.full);
-      return;
-    }
-
-    // ---------------------------
-    // multi-options
-    // ---------------------------
-    if (skill.type === "multi-options") {
-      aiRef.options = skill.options;
-      aiRef.full = replaceTimeWithInput(aiRef.options[0]);
-      renderOverlay(prompt, aiRef.full);
-      return;
-    }
-
-    // ---------------------------
-    // multi-step-options
-    // ---------------------------
-    if (skill.type === "multi-step-options") {
-      aiRef.type = "multi-step-options";
-      aiRef.steps = skill.steps;
-      aiRef.phase = 0; // 0=固定步驟, 1=label 選單, 2=label.options
-      aiRef.results = [];
-    
-      // Phase 0：固定步驟
-      aiRef.options = aiRef.steps[0].options; // ["at xx:xx,入院護理已完成"]
-      aiRef.activeIndex = 0;
-      aiRef.full = aiRef.options[0];
-    
-      renderOverlay(textarea.value, aiRef.full);
-      return;
-    }
-
-
-    // ---------------------------
-    // ai-multi-options
-    // ---------------------------
-    if (skill.type === "ai-multi-options") {
-      aiRef.options = skill.options;
-      aiRef.full = replaceTimeWithInput(aiRef.options[0]);
-      renderOverlay(prompt, aiRef.full);
-      return;
+    } catch (err) {
+      console.error("AI Fetch Error:", err);
+      overlay.innerHTML = "";
     }
   }
 
@@ -155,182 +113,113 @@ export function initAISuggestion(textarea, overlay) {
   textarea.addEventListener("keydown", (e) => {
     if (!aiRef.options || aiRef.options.length === 0) return;
 
-    if (e.key === "ArrowDown") {
+    // 上下選擇
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
-      aiRef.activeIndex = (aiRef.activeIndex + 1) % aiRef.options.length;
+      const step = (e.key === "ArrowDown") ? 1 : -1;
+      aiRef.activeIndex = (aiRef.activeIndex + step + aiRef.options.length) % aiRef.options.length;
       aiRef.full = aiRef.options[aiRef.activeIndex];
-      renderOverlay(textarea.value, aiRef.full);
+      
+      if (aiRef.type === "multi-step-options") {
+        renderOverlay(textarea.value, textarea.value + aiRef.full);
+      } else {
+        renderOverlay(textarea.value, aiRef.full);
+      }
     }
 
-    if (e.key === "ArrowUp") {
-      e.preventDefault();
-      aiRef.activeIndex =
-        (aiRef.activeIndex - 1 + aiRef.options.length) % aiRef.options.length;
-      aiRef.full = aiRef.options[aiRef.activeIndex];
-      renderOverlay(textarea.value, aiRef.full);
-    }
-
+    // 確認補全 (Tab)
     if (e.key === "Tab") {
       e.preventDefault();
-    
-      const full = aiRef.full;
+      const chosen = aiRef.options[aiRef.activeIndex];
       const text = textarea.value;
-    
-      // 使用者輸入的最後一段（trigger）
-      const trigger = text.split(/[\s\n]/).pop();
-    
-      // ⭐ 找到 trigger 的實際位置（不會刪錯）
-      const triggerIndex = text.lastIndexOf(trigger);
-    
-      // ⭐ 刪掉 trigger（這是唯一正確的方式）
-      if (triggerIndex !== -1) {
-        textarea.value = text.slice(0, triggerIndex);
-      }
-    
-      // ⭐ 直接使用 full 當補全
-      let segment = full;
-    
-      // ⭐ 智慧空白：只有前後都沒有標點才加空白
-      const lastChar = textarea.value.slice(-1);
-      const firstChar = segment[0];
-      const punctuation = ".,;!?，。；！？、";
-    
-      const needSpaceBefore = !punctuation.includes(lastChar);
-      const needSpaceAfter = !punctuation.includes(firstChar);
-    
-      if (aiRef.type !== "trigger-prefix" && aiRef.type !== "trigger-multi-prefix") {
-        if (needSpaceBefore && needSpaceAfter) {
-          segment = " " + segment;
-        }
-      }
-    
-      // ⭐ 插入補全文字
-      textarea.value += segment;
-      textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
-      overlay.innerHTML = "";
-    
-      // ⭐ multi-step-options：正確 push，不重複
+
       if (aiRef.type === "multi-step-options") {
-    
-        // Phase 0：固定步驟
+        // 執行插入
+        textarea.value += chosen;
+        
         if (aiRef.phase === 0) {
-          const chosen = aiRef.options[aiRef.activeIndex];
-    
-          textarea.value += chosen;
-          textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
-    
-          aiRef.results.push({
-            step: aiRef.steps[0].label,
-            value: chosen
-          });
-    
-          // 進入 Phase 1：顯示所有 label
+          // 第一步完成 -> 進入 Phase 1 (顯示剩餘的 Labels)
           aiRef.phase = 1;
           aiRef.options = aiRef.steps.slice(1).map(s => s.label);
           aiRef.activeIndex = 0;
           aiRef.full = aiRef.options[0];
-    
           renderOverlay(textarea.value, textarea.value + aiRef.full);
-          return;
-        }
-    
-        // Phase 1：label 選單 LOOP
-        if (aiRef.phase === 1) {
-          const selectedLabel = aiRef.options[aiRef.activeIndex];
-    
-          // 插入 label 本身
-          textarea.value += selectedLabel;
-          textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
-    
-          aiRef.results.push({
-            step: "label",
-            value: selectedLabel
-          });
-    
-          // 找到該 label 的 step
-          const stepObj = aiRef.steps.find(s => s.label === selectedLabel);
-    
-          // 進入 Phase 2：顯示該 label 的 options
+        } 
+        else if (aiRef.phase === 1) {
+          // 選中了 Label -> 進入 Phase 2 (顯示該 Label 的 Options)
+          const stepObj = aiRef.steps.find(s => s.label === chosen);
           aiRef.phase = 2;
-          aiRef.options = stepObj.options;
+          aiRef.options = stepObj.options.map(opt => replaceTimeWithInput(opt));
           aiRef.activeIndex = 0;
           aiRef.full = aiRef.options[0];
-    
           renderOverlay(textarea.value, textarea.value + aiRef.full);
-          return;
-        }
-    
-        // Phase 2：插入 label.options → 完成
-        if (aiRef.phase === 2) {
-          const chosen = aiRef.options[aiRef.activeIndex];
-    
-          textarea.value += chosen;
-          textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
-    
-          aiRef.results.push({
-            step: "option",
-            value: chosen
-          });
-    
+        } 
+        else if (aiRef.phase === 2) {
+          // 最後一步完成 -> 重設
           resetAI();
           overlay.innerHTML = "";
-          return;
         }
-      }
-
-      
-        // 下一步的 options
-        aiRef.options = aiRef.steps[aiRef.stepIndex].options;
-        aiRef.activeIndex = 0;
-        aiRef.full = aiRef.options[0];
-      
-        renderOverlay(textarea.value, textarea.value + aiRef.full);
-        e.preventDefault();
-        return;
-      }
-      resetAI();
-  });
-
-    function appendSegment(textarea, text, type) {
-      if (type === "trigger-prefix" || type === "trigger-multi-prefix") {
-        textarea.value += text;
       } else {
-        textarea.value += text;   // 已經在外面加空白了
+        // 一般模式：刪除 trigger 並插入 full
+        const trigger = text.split(/[\s\n]/).pop();
+        const triggerIndex = text.lastIndexOf(trigger);
+        if (triggerIndex !== -1) {
+          textarea.value = text.slice(0, triggerIndex);
+        }
+
+        let segment = chosen;
+        const lastChar = textarea.value.slice(-1);
+        const punctuation = ".,;!?，。；！？、";
+        if (lastChar && !punctuation.includes(lastChar) && !segment.startsWith(" ")) {
+            segment = " " + segment;
+        }
+
+        textarea.value += segment;
+        resetAI();
+        overlay.innerHTML = "";
       }
-    
       textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
     }
-  
-    function resetAI() {
-      aiRef.type = null;
-      aiRef.full = null;
-      aiRef.steps = null;
-      aiRef.stepIndex = 0;
-      aiRef.options = [];
-      aiRef.activeIndex = 0;
-      aiRef.results = [];
+
+    // 取消
+    if (e.key === "Escape") {
+      resetAI();
+      overlay.innerHTML = "";
     }
-    function replaceTimeWithInput(text) {
-      const input = document.getElementById("datetime");
-      if (!input || !input.value) return text;
+  });
+
+  function resetAI() {
+    aiRef.type = null;
+    aiRef.full = null;
+    aiRef.steps = null;
+    aiRef.phase = 0;
+    aiRef.options = [];
+    aiRef.activeIndex = 0;
+    aiRef.results = [];
+  }
+
+  function replaceTimeWithInput(text) {
+    const input = document.getElementById("datetime");
+    // 如果沒找到 input，改用當前時間作為 fallback
+    const now = new Date();
+    const defaultTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
     
-      // datetime-local → 拆成日期與時間
+    let timeHHMM = defaultTime;
+    let dateSlash = now.toLocaleDateString('zh-TW');
+
+    if (input && input.value) {
       const [datePart, timePart] = input.value.split("T");
       const [hh, mm] = timePart.split(":");
-    
-      // 產生三種格式
-      const timeHHMM = `${hh}:${mm}`;
-      const dateSlash = datePart.replace(/-/g, "/");
-      const dateTimeHHMM = `${dateSlash} ${hh}:${mm}`;
-      const dateTimeHHMMSS = `${dateSlash} ${hh}:${mm}:00`;
-    
-      // 依照 AI 補全的格式替換
-      return text
-        // 1) xxxx/xx/xx xx:xx:xx → 用 HH:MM:SS
-        .replace(/\bxxxx\/xx\/xx xx:xx:xx\b/gi, dateTimeHHMMSS)
-        // 2) xxxx/xx/xx xx:xx → 用 HH:MM
-        .replace(/\bxxxx\/xx\/xx xx:xx\b/gi, dateTimeHHMM)
-        // 3) xx:xx → 用 HH:MM
-        .replace(/\bxx:xx\b/gi, timeHHMM);
+      timeHHMM = `${hh}:${mm}`;
+      dateSlash = datePart.replace(/-/g, "/");
     }
+
+    const dateTimeHHMM = `${dateSlash} ${timeHHMM}`;
+    const dateTimeHHMMSS = `${dateSlash} ${timeHHMM}:00`;
+
+    return text
+      .replace(/\bxxxx\/xx\/xx xx:xx:xx\b/gi, dateTimeHHMMSS)
+      .replace(/\bxxxx\/xx\/xx xx:xx\b/gi, dateTimeHHMM)
+      .replace(/\bxx:xx\b/gi, timeHHMM);
+  }
 }
