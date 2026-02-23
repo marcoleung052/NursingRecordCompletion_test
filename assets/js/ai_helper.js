@@ -16,6 +16,8 @@ export function initAISuggestion(textarea, overlay) {
   let typingTimer = null;
   const FRONTEND_DELAY = 100;
 
+  // --- 內部工具函式 ---
+
   function renderOverlay(prefix, suggestion) {
     if (!suggestion) {
       overlay.innerHTML = "";
@@ -25,7 +27,6 @@ export function initAISuggestion(textarea, overlay) {
     if (aiRef.type !== "multi-step-options" && suggestion.startsWith(prefix)) {
       displaySuggestion = suggestion.slice(prefix.length);
     }
-
     overlay.innerHTML = `
       <span style="color: transparent;">${prefix}</span>
       <span style="color: #ccc;">${displaySuggestion}</span>
@@ -50,31 +51,16 @@ export function initAISuggestion(textarea, overlay) {
 
   function getSmartSpace(prevText, nextText, forceSpace = false) {
     if (!prevText || !nextText) return "";
-    const lastChar = prevText.slice(-1); // 輸入框最後一個字
-    const firstChar = nextText[0];       // 即將插入的第一個字
-
-    // 1. 如果最後一個字已經是空格或換行，不加空白
+    const lastChar = prevText.slice(-1);
+    const firstChar = nextText[0];
     if (/\s/.test(lastChar)) return "";
-
-    // 2. 定義標點符號黑名單（這些符號前後通常不需要額外空格）
-    const punctuation = ".,;!?，。；！？、：:()[]{} \n";
-    
-    // 如果前一個字或後一個字是標點符號，不加空白
-    if (punctuation.includes(lastChar) || punctuation.includes(firstChar)) {
-      return "";
-    }
-
-    // 3. 情況：強制要求加空白 (用於 Option 完接下一個 Step 的 Label)
+    const punctuation = ".,;!?，。；！？、：:()（）【】[]{} \n";
+    if (punctuation.includes(lastChar) || punctuation.includes(firstChar)) return "";
     if (forceSpace) return " ";
-
-    // 4. 規則：只有「中接中」才不加空白
-    if (isChinese(lastChar) && isChinese(firstChar)) {
-      return "";
-    }
-
-    // 5. 其餘情況 (中英、英英、英中) 皆補空白
+    if (isChinese(lastChar) && isChinese(firstChar)) return "";
     return " ";
   }
+
   function replaceTimeWithInput(text) {
     const input = document.getElementById("datetime");
     const now = new Date();
@@ -94,13 +80,36 @@ export function initAISuggestion(textarea, overlay) {
       .replace(/\bxx:xx\b/gi, timeHHMM);
   }
 
+  // ⭐ BMI 計算邏輯：從現有文字提取數值並計算結果
+  function getBMIData() {
+    const text = textarea.value;
+    // 支援：體重 70、體重:70、體重： 70.5 等格式
+    const weightMatch = text.match(/體重\s*[:：]?\s*(\d+(\.\d+)?)/);
+    const heightMatch = text.match(/身高\s*[:：]?\s*(\d+(\.\d+)?)/);
+
+    if (weightMatch && heightMatch) {
+      const weight = parseFloat(weightMatch[1]);
+      const height = parseFloat(heightMatch[1]) / 100; // cm -> m
+      if (height > 0) {
+        const bmi = (weight / (height * height)).toFixed(1);
+        let result = "正常範圍";
+        if (bmi < 18.5) result = "體重過輕";
+        else if (bmi >= 24 && bmi < 27) result = "過重";
+        else if (bmi >= 27 && bmi < 30) result = "輕度肥胖";
+        else if (bmi >= 30 && bmi < 35) result = "中度肥胖";
+        else if (bmi >= 35) result = "重度肥胖";
+        
+        return { bmi: `：${bmi}`, result: `：${result}` };
+      }
+    }
+    return null;
+  }
+
   function updateStepState() {
-    // 找出尚未完成的 steps
     const remainingSteps = aiRef.steps
       .map((s, idx) => ({ ...s, originalIndex: idx }))
       .filter(s => !aiRef.completedIndices.has(s.originalIndex));
 
-    // 如果連當前正在選 Option 的步驟都被標記完成了，且沒有剩下的了，才重置
     if (remainingSteps.length === 0 && aiRef.phase === "label") {
       resetAI();
       return;
@@ -112,7 +121,19 @@ export function initAISuggestion(textarea, overlay) {
     } else {
       const currentStep = aiRef.steps[aiRef.currentStepIndex];
       if (currentStep) {
-        aiRef.options = currentStep.options.map(opt => replaceTimeWithInput(opt));
+        let options = currentStep.options;
+
+        // ⭐ BMI 動態攔截：如果當前步驟是 BMI 相關，直接計算並替換選項
+        const bmiData = getBMIData();
+        if (bmiData) {
+          if (currentStep.label.includes("BMI值")) {
+            options = [bmiData.bmi];
+          } else if (currentStep.label.includes("BMI結果")) {
+            options = [bmiData.result];
+          }
+        }
+
+        aiRef.options = options.map(opt => replaceTimeWithInput(opt));
       } else {
         aiRef.phase = "label";
         updateStepState();
@@ -124,6 +145,9 @@ export function initAISuggestion(textarea, overlay) {
     aiRef.full = aiRef.options[0] || null;
     renderOverlay(textarea.value, aiRef.full);
   }
+
+  // --- API 與 事件處理 ---
+
   async function callAI(prompt) {
     const params = new URLSearchParams(window.location.search);
     const patientId = params.get("id");
@@ -145,12 +169,10 @@ export function initAISuggestion(textarea, overlay) {
         aiRef.steps = skill.steps;
         aiRef.completedIndices.clear();
 
-        // ⭐ 修改：更精確地匹配第一個 Label
         const trimmedPrompt = prompt.trim();
         const firstLabel = skill.steps[0].label;
         
         if (trimmedPrompt === firstLabel || trimmedPrompt.endsWith(firstLabel)) {
-          // 如果輸入內容剛好結尾是第一個 Label (例如 Admitted)
           aiRef.completedIndices.add(0);
           aiRef.currentStepIndex = 0;
           aiRef.phase = "option";
@@ -176,7 +198,6 @@ export function initAISuggestion(textarea, overlay) {
     const text = textarea.value;
     const lastChar = text.slice(-1);
 
-    // ⭐ 如果最後一個字是換行，強制重置狀態，準備迎接新 Skill
     if (lastChar === "\n") {
       resetAI();
       return;
@@ -190,7 +211,7 @@ export function initAISuggestion(textarea, overlay) {
     if (!text.trim()) { resetAI(); return; }
     typingTimer = setTimeout(() => callAI(text), FRONTEND_DELAY);
   });
-  
+
   textarea.addEventListener("keydown", (e) => {
     if (!aiRef.options || aiRef.options.length === 0) return;
 
@@ -209,29 +230,20 @@ export function initAISuggestion(textarea, overlay) {
 
       if (aiRef.type === "multi-step-options") {
         if (aiRef.phase === "label") {
-          // --- 情況 A：選中 Label ---
           const space = getSmartSpace(textarea.value, chosen, true);
           textarea.value += space + chosen;
-          
           const selectedIdx = aiRef.currentMapping[aiRef.activeIndex];
-          
-          // ⭐ 修正：只標記「之前」的步驟為已完成，當前步驟 (selectedIdx) 先不標記
           for (let i = 0; i < selectedIdx; i++) {
             aiRef.completedIndices.add(i);
           }
-          
           aiRef.currentStepIndex = selectedIdx;
-          aiRef.phase = "option"; // 進入選內容階段
+          aiRef.phase = "option";
         } else {
-          // --- 情況 B：選中 Option ---
           const space = getSmartSpace(textarea.value, chosen, false);
           textarea.value += space + chosen;
-          
-          // ⭐ 此時才正式標記當前步驟已完成
           aiRef.completedIndices.add(aiRef.currentStepIndex);
-          aiRef.phase = "label"; // 回到選 Label 階段
+          aiRef.phase = "label";
         }
-        // 重新計算剩下的 Label 或顯示當前的 Option
         updateStepState();
       } else {
         const text = textarea.value;
