@@ -3,9 +3,10 @@ import { apiFetch } from "./api.js";
 export function initAISuggestion(textarea, overlay) {
   const aiRef = {
     type: null,
-    steps: null,
-    stepIndex: 0,
-    phase: "label", // "label" 或 "option"
+    steps: [],
+    completedIndices: new Set(), // 記錄哪些 step 已經完成
+    currentStepIndex: null,      // 當前選中的 step
+    phase: "label",              // "label" 或 "option"
     options: [],
     activeIndex: 0,
     full: null
@@ -14,33 +15,22 @@ export function initAISuggestion(textarea, overlay) {
   let typingTimer = null;
   const FRONTEND_DELAY = 100;
 
-  // ---------------------------
-  // 核心工具函式
-  // ---------------------------
-
   function renderOverlay(prefix, suggestion) {
     if (!suggestion) {
       overlay.innerHTML = "";
       return;
     }
-
-    // 計算建議文字：如果是多步模式，suggestion 直接接在後面
-    // 如果是單步模式且 suggestion 開頭包含 prefix，則只顯示剩餘部分
-    let displaySuggestion = suggestion;
-    if (aiRef.type !== "multi-step-options" && suggestion.startsWith(prefix)) {
-        displaySuggestion = suggestion.slice(prefix.length);
-    }
-
     overlay.innerHTML = `
       <span style="color: transparent;">${prefix}</span>
-      <span style="color: #ccc;">${displaySuggestion}</span>
+      <span style="color: #ccc;">${suggestion}</span>
     `;
   }
 
   function resetAI() {
     aiRef.type = null;
-    aiRef.steps = null;
-    aiRef.stepIndex = 0;
+    aiRef.steps = [];
+    aiRef.completedIndices.clear();
+    aiRef.currentStepIndex = null;
     aiRef.phase = "label";
     aiRef.options = [];
     aiRef.activeIndex = 0;
@@ -61,35 +51,32 @@ export function initAISuggestion(textarea, overlay) {
       timeHHMM = `${hh}:${mm}`;
       dateSlash = datePart.replace(/-/g, "/");
     }
-
     return text
       .replace(/\bxxxx\/xx\/xx xx:xx:xx\b/gi, `${dateSlash} ${timeHHMM}:00`)
       .replace(/\bxxxx\/xx\/xx xx:xx\b/gi, `${dateSlash} ${timeHHMM}`)
       .replace(/\bxx:xx\b/gi, timeHHMM);
   }
 
-  function getPrefixSpace(currentVal) {
-    if (!currentVal) return "";
-    const lastChar = currentVal.slice(-1);
-    const punctuation = ".,;!?，。；！？、 \n";
-    return punctuation.includes(lastChar) ? "" : " ";
-  }
-
+  // 關鍵：更新狀態以顯示「剩餘所有 Label」或「當前 Option」
   function updateStepState() {
-    const currentStep = aiRef.steps[aiRef.stepIndex];
-    if (!currentStep) {
+    // 找出所有尚未完成的 steps
+    const remainingSteps = aiRef.steps
+      .map((s, idx) => ({ ...s, originalIndex: idx }))
+      .filter(s => !aiRef.completedIndices.has(s.originalIndex));
+
+    if (remainingSteps.length === 0) {
       resetAI();
       return;
     }
 
     if (aiRef.phase === "label") {
-      if (!currentStep.label || currentStep.label.trim() === "") {
-        aiRef.phase = "option";
-        updateStepState();
-        return;
-      }
-      aiRef.options = [currentStep.label];
+      // 顯示所有剩餘步驟的 Label
+      aiRef.options = remainingSteps.map(s => s.label);
+      // 綁定原始索引以便後續找 options
+      aiRef.currentMapping = remainingSteps.map(s => s.originalIndex);
     } else {
+      // 顯示當前選中 Step 的所有 Options
+      const currentStep = aiRef.steps[aiRef.currentStepIndex];
       aiRef.options = currentStep.options.map(opt => replaceTimeWithInput(opt));
     }
 
@@ -97,10 +84,6 @@ export function initAISuggestion(textarea, overlay) {
     aiRef.full = aiRef.options[0];
     renderOverlay(textarea.value, aiRef.full);
   }
-
-  // ---------------------------
-  // 異步處理
-  // ---------------------------
 
   async function callAI(prompt) {
     const params = new URLSearchParams(window.location.search);
@@ -118,11 +101,18 @@ export function initAISuggestion(textarea, overlay) {
 
       if (skill.type === "multi-step-options") {
         aiRef.steps = skill.steps;
-        aiRef.stepIndex = 0;
-        aiRef.phase = "label";
+        aiRef.completedIndices.clear();
+        
+        // 檢查輸入是否剛好匹配第一個 label (如 "Admitted")
+        if (prompt.trim().endsWith(skill.steps[0].label)) {
+          aiRef.completedIndices.add(0); // 標記第一個已完成 (或部分完成)
+          aiRef.currentStepIndex = 0;
+          aiRef.phase = "option"; // 直接選內容
+        } else {
+          aiRef.phase = "label";
+        }
         updateStepState();
       } else {
-        // 處理單步模式
         aiRef.options = (skill.options || skill.candidates || [skill.full || skill.text || ""])
           .map(o => replaceTimeWithInput(o));
         aiRef.activeIndex = 0;
@@ -130,14 +120,10 @@ export function initAISuggestion(textarea, overlay) {
         renderOverlay(prompt, aiRef.full);
       }
     } catch (err) {
-      console.error("AI Fetch Error:", err);
+      console.error("AI Error:", err);
       resetAI();
     }
   }
-
-  // ---------------------------
-  // 事件監聽
-  // ---------------------------
 
   textarea.addEventListener("input", () => {
     clearTimeout(typingTimer);
@@ -165,28 +151,30 @@ export function initAISuggestion(textarea, overlay) {
       const chosen = aiRef.full;
 
       if (aiRef.type === "multi-step-options") {
-        // 插入 Label 或 Option
-        textarea.value += getPrefixSpace(textarea.value) + chosen;
-        textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
-
-        // 切換狀態
         if (aiRef.phase === "label") {
-          aiRef.phase = "option";
+          // 1. 選中了某個 Label
+          textarea.value += chosen;
+          // 找出這個 Label 對應的原始 Step Index
+          aiRef.currentStepIndex = aiRef.currentMapping[aiRef.activeIndex];
+          aiRef.phase = "option"; // 進入選 Option 階段
         } else {
-          aiRef.stepIndex++;
-          aiRef.phase = "label";
+          // 2. 選中了某個 Option
+          textarea.value += chosen;
+          // 標記該步驟已完成
+          aiRef.completedIndices.add(aiRef.currentStepIndex);
+          aiRef.phase = "label"; // 回到選 Label 階段，顯示剩餘的
         }
         updateStepState();
       } else {
-        // 單步模式：刪除末端 trigger 後插入
+        // 單步模式
         const text = textarea.value;
         const trigger = text.split(/[\s\n]/).pop();
         const triggerIndex = text.lastIndexOf(trigger);
         if (triggerIndex !== -1) textarea.value = text.slice(0, triggerIndex);
-        
-        textarea.value += getPrefixSpace(textarea.value) + chosen;
+        textarea.value += chosen;
         resetAI();
       }
+      textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
     }
 
     if (e.key === "Escape") resetAI();
