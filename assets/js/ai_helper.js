@@ -241,49 +241,51 @@ function updateStepState() {
     }
 
     if (e.key === "Tab") {
-      e.preventDefault();
-      const chosen = aiRef.full;
-      if (!chosen) return;
+      e.preventDefault();
+      const chosen = aiRef.full;
+      if (!chosen) return;
 
-      if (aiRef.type === "multi-step-options") {
-        if (aiRef.phase === "label") {
-          // --- 情況 A：選中 Label ---
-          const space = getSmartSpace(textarea.value, chosen, true);
-          textarea.value += space + chosen;
-          
-          const selectedIdx = aiRef.currentMapping[aiRef.activeIndex];
-          
-          // ⭐ 修正：只標記「之前」的步驟為已完成，當前步驟 (selectedIdx) 先不標記
-          for (let i = 0; i < selectedIdx; i++) {
-            aiRef.completedIndices.add(i);
-          }
-          
-          aiRef.currentStepIndex = selectedIdx;
-          aiRef.phase = "option"; // 進入選內容階段
-        } else {
-          // --- 情況 B：選中 Option ---
-          const space = getSmartSpace(textarea.value, chosen, false);
-          textarea.value += space + chosen;
-          
-          // ⭐ 此時才正式標記當前步驟已完成
-          aiRef.completedIndices.add(aiRef.currentStepIndex);
-          aiRef.phase = "label"; // 回到選 Label 階段
-        }
-        // 重新計算剩下的 Label 或顯示當前的 Option
-        updateStepState();
-      } else {
-        const text = textarea.value;
-        const trigger = text.split(/[\s\n]/).pop();
-        const triggerIndex = text.lastIndexOf(trigger);
-        if (triggerIndex !== -1) textarea.value = text.slice(0, triggerIndex);
-        const space = getSmartSpace(textarea.value, chosen, false);
-        textarea.value += space + chosen;
-        const currentContent = textarea.value;
-        resetAI();
-        callAI(currentContent);
-      }
-      textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
-    }
+      if (aiRef.type === "multi-step-options") {
+        // ... (這部分維持你的多步邏輯)
+        if (aiRef.phase === "label") {
+          const space = getSmartSpace(textarea.value, chosen, true);
+          textarea.value += space + chosen;
+          const selectedIdx = aiRef.currentMapping[aiRef.activeIndex];
+          for (let i = 0; i < selectedIdx; i++) {
+            aiRef.completedIndices.add(i);
+          }
+          aiRef.currentStepIndex = selectedIdx;
+          aiRef.phase = "option";
+        } else {
+          const space = getSmartSpace(textarea.value, chosen, false);
+          textarea.value += space + chosen;
+          aiRef.completedIndices.add(aiRef.currentStepIndex);
+          aiRef.phase = "label";
+        }
+        updateStepState();
+      } else {
+        // ⭐ 修正：針對不同類型決定是「取代」還是「追加」
+        const text = textarea.value;
+        const trigger = text.split(/[\s\n]/).pop();
+        
+        // 如果是這幾種「前綴觸發」類型，才需要刪除已輸入的 trigger 再取代
+        const needsReplace = ["trigger-prefix", "trigger-multi-prefix"].includes(aiRef.type);
+
+        if (needsReplace) {
+          const triggerIndex = text.lastIndexOf(trigger);
+          if (triggerIndex !== -1) textarea.value = text.slice(0, triggerIndex);
+        }
+        
+        // 取得智慧空白並追加
+        const space = getSmartSpace(textarea.value, chosen, false);
+        textarea.value += space + chosen;
+        
+        const currentContent = textarea.value;
+        resetAI();
+        callAI(currentContent); // 繼續偵測後續是否有 multi-step
+      }
+      textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
+    }
 
     if (e.key === "Escape") resetAI();
   });
