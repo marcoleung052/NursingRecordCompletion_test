@@ -1,10 +1,12 @@
 // api.js - 共用 API wrapper
 
 // 後端資料庫 API
-const API_BASE = "https://marcoleung052-nursing-copilot-api.hf.space";
+//const API_BASE = "https://marcoleung052-nursing-copilot-api.hf.space";
+const API_BASE = "http://192.168.1.104";
 
 // AI 模型 API
-const AI_BASE  = "https://marcoleung052-nursing-copilot-api.hf.space/api";
+//const AI_BASE  = "https://marcoleung052-nursing-copilot-api.hf.space/api";
+const AI_BASE  = "http://192.168.1.104";
 
 // ------------------ 通用 fetch ------------------
 async function apiFetch(path, opts = {}) {
