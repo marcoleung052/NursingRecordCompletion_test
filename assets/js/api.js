@@ -2,11 +2,11 @@
 
 // 後端資料庫 API
 //const API_BASE = "https://marcoleung052-nursing-copilot-api.hf.space";
-const API_BASE = "https://combo-blind-drug-router.trycloudflare.com";
+const API_BASE = "https://https://ilalab.ai.cgu.edu.tw/nursing/api/";
 
 // AI 模型 API
 //const AI_BASE  = "https://marcoleung052-nursing-copilot-api.hf.space/api";
-const AI_BASE  = "https://combo-blind-drug-router.trycloudflare.com";
+const AI_BASE  = "https://https://ilalab.ai.cgu.edu.tw/nursing/api/";
 
 // ------------------ 通用 fetch ------------------
 async function apiFetch(path, opts = {}) {
