@@ -3,10 +3,10 @@
 // 後端資料庫 API
 //const API_BASE = "https://marcoleung052-nursing-copilot-api.hf.space";
 //const API_BASE = "https://ilalab.ai.cgu.edu.tw/nursing/api/";
-const API_BASE = "https://ilalab.ai.cgu.edu.tw/api/nursing/";
+const API_BASE = "https://ilalab.ai.cgu.edu.tw/api/nursing";
 // AI 模型 API
 //const AI_BASE  = "https://marcoleung052-nursing-copilot-api.hf.space/api";
-const AI_BASE = "https://ilalab.ai.cgu.edu.tw/api/nursing/";
+const AI_BASE = "https://ilalab.ai.cgu.edu.tw/api/nursing";
 //const AI_BASE  = "https://ilalab.ai.cgu.edu.tw/nursing/api/";
 
 // ------------------ 通用 fetch ------------------
