@@ -29,7 +29,7 @@ if (location.pathname.includes("patients.html")) {
             <td>${r.created_at || ""}</td>
             <td>${r.content || ""}</td>
             <td>
-              <a class="btn" href="edit_record.html?id=${r.id}">編輯</a>
+              <a class="btn" href="edit_record.html?id=${r.id}&pid=${patientId}">編輯</a>
             </td>
           </tr>
         `).join("");
