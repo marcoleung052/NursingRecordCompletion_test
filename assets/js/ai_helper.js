@@ -164,7 +164,7 @@ function updateStepState() {
   
   async function callAI(prompt) {
     const params = new URLSearchParams(window.location.search);
-    const patientId = params.get("id");
+    const patientId = params.get("pid") || params.get("id");
 
     try {
       const res = await apiFetch("/api/predict", {
