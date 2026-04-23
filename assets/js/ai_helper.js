@@ -10,7 +10,8 @@ export function initAISuggestion(textarea, overlay) {
     options: [],
     activeIndex: 0,
     full: null,
-    currentMapping: []
+    currentMapping: [],
+    isCalling: false
   };
 
   let typingTimerFast = null;
@@ -18,6 +19,13 @@ export function initAISuggestion(textarea, overlay) {
   let currentController = null;
 
   function renderOverlay(prefix, suggestion) {
+    if (aiRef.isCalling) {
+      overlay.innerHTML = `
+        <span style="color: transparent;">${prefix}</span>
+        <span style="color: #999; font-style: italic;">正在 AI 補全...</span>
+      `;
+      return;
+    }
     if (!suggestion) {
       overlay.innerHTML = "";
       return;
@@ -33,6 +41,7 @@ export function initAISuggestion(textarea, overlay) {
   }
 
   function resetAI() {
+    aiRef.isCalling = false;
     aiRef.type = null;
     aiRef.steps = [];
     aiRef.completedIndices.clear();
@@ -148,6 +157,8 @@ export function initAISuggestion(textarea, overlay) {
 
     if (currentController) currentController.abort();
     currentController = new AbortController();
+    aiRef.isCalling = true;
+    renderOverlay(textarea.value, null);
 
     try {
       const res = await apiFetch("/predict", {
@@ -156,6 +167,7 @@ export function initAISuggestion(textarea, overlay) {
         signal: currentController.signal
       });
       currentController = null;
+      aiRef.isCalling = false;
 
       if (!res.completions?.length) { resetAI(); return; }
       const skill = res.completions[0];
@@ -184,6 +196,7 @@ export function initAISuggestion(textarea, overlay) {
     } catch (err) {
       if (err.name === "AbortError") return;
       console.error("AI Error:", err);
+      aiRef.isCalling = false;
       resetAI();
     }
   }
