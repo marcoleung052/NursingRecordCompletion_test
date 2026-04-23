@@ -14,7 +14,7 @@ export function initAISuggestion(textarea, overlay) {
   };
 
   let typingTimer = null;
-  const FRONTEND_DELAY = 100;
+  const FRONTEND_DELAY = 250;
 
   function renderOverlay(prefix, suggestion) {
     if (!suggestion) {
