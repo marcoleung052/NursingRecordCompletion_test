@@ -15,7 +15,8 @@ export function initAISuggestion(textarea, overlay) {
   let typingTimerSlow = null;
   let currentController = null;
 
-  // ── Undo / Redo ───────────────────────────────────────────────────────────
+  // ── Undo / Redo (stores textarea value strings) ───────────────────────────
+  // Only tracks Tab-completion events; Ctrl+Z restores and re-fetches suggestion
   const undoStack = [];
   const redoStack = [];
 
@@ -29,24 +30,49 @@ export function initAISuggestion(textarea, overlay) {
   let lastPrompt = null;
   let lastAcceptedDelta = null;
   let justAccepted = false;
+  let pendingDislike    = null; // set on 👎; sent with desired_response on form save
+  let currentScore      = null; // numeric score from last AI response
+  let suggestionShownAt = null; // timestamp when the current suggestion was rendered
 
-  // ── Inject controls panel below .copilot-container ───────────────────────
+  // ── Inject controls to the right of the datetime input ───────────────────
   const copilotContainer = overlay.parentElement;
+
   const panel = document.createElement("div");
   panel.className = "ai-controls-panel";
   panel.innerHTML = `
-    <div class="ai-token-row">
-      <span class="ai-ctrl-label">Token</span>
-      <input type="range" class="ai-token-slider" min="16" max="512" step="16" value="${maxTokens}">
-      <span class="ai-token-val">${maxTokens}</span>
-    </div>
-    <div class="ai-feedback-row">
-      <span class="ai-score-badge"></span>
-      <button type="button" class="ai-feedback-btn" data-fb="like"    title="讚"   disabled>👍</button>
-      <button type="button" class="ai-feedback-btn" data-fb="dislike" title="倒讚" disabled>👎</button>
-    </div>`;
-  copilotContainer.insertAdjacentElement("afterend", panel);
+    <span class="ai-ctrl-label">Token</span>
+    <input type="range" class="ai-token-slider" min="16" max="512" step="16" value="${maxTokens}">
+    <span class="ai-token-val">${maxTokens}</span>
+    <span class="ai-ctrl-sep"></span>
+    <span class="ai-score-badge"></span>
+    <button type="button" class="ai-feedback-btn" data-fb="like"    title="讚"   disabled>👍</button>
+    <button type="button" class="ai-feedback-btn" data-fb="dislike" title="倒讚" disabled>👎</button>`;
 
+  const datetimeInput = document.getElementById("datetime");
+  if (datetimeInput) {
+    const datetimeLabel = datetimeInput.closest("label") || datetimeInput.parentElement;
+    const wrapper = document.createElement("div");
+    wrapper.className = "ai-datetime-row";
+    datetimeLabel.parentNode.insertBefore(wrapper, datetimeLabel);
+    wrapper.appendChild(datetimeLabel);
+    wrapper.appendChild(panel);
+  } else {
+    copilotContainer.insertAdjacentElement("afterend", panel);
+  }
+
+  // ── Inject keyboard shortcuts hint below the textarea ────────────────────
+  const hintsEl = document.createElement("p");
+  hintsEl.className = "ai-shortcuts-hint";
+  hintsEl.innerHTML =
+    `<kbd>Tab</kbd> 補全 &ensp;` +
+    `<kbd>↑↓</kbd> 切換選項 &ensp;` +
+    `<kbd>Shift+R</kbd> 重新生成 &ensp;` +
+    `<kbd>Ctrl+Z</kbd> 還原 &ensp;` +
+    `<kbd>Ctrl+Y</kbd> 重做 &ensp;` +
+    `<kbd>Esc</kbd> 清除`;
+  copilotContainer.insertAdjacentElement("afterend", hintsEl);
+
+  // ── Control element refs ──────────────────────────────────────────────────
   const sliderEl   = panel.querySelector(".ai-token-slider");
   const tokenValEl = panel.querySelector(".ai-token-val");
   const scoreBadge = panel.querySelector(".ai-score-badge");
@@ -60,7 +86,7 @@ export function initAISuggestion(textarea, overlay) {
   likeBtn.addEventListener("click",    () => sendFeedback(true));
   dislikeBtn.addEventListener("click", () => sendFeedback(false));
 
-  // Fetch default max_tokens from backend
+  // Fetch default max_tokens from backend config
   apiFetch("/predict/config").then(cfg => {
     if (cfg?.max_tokens) {
       maxTokens = cfg.max_tokens;
@@ -71,9 +97,14 @@ export function initAISuggestion(textarea, overlay) {
   }).catch(() => {});
 
   function setScore(score) {
-    if (score != null) {
-      scoreBadge.textContent = `分數：${score}`;
-      scoreBadge.style.display = "";
+    currentScore = score != null ? Number(score) : null;
+    if (currentScore != null) {
+      scoreBadge.textContent   = `分數：${currentScore}`;
+      scoreBadge.style.display = "inline-block";
+      // Low score: highlight badge in amber
+      scoreBadge.style.background = currentScore < 60 ? "#fef3c7" : "#f1f5f9";
+      scoreBadge.style.borderColor = currentScore < 60 ? "#fbbf24" : "#e2e8f0";
+      scoreBadge.style.color       = currentScore < 60 ? "#92400e" : "#475569";
     } else {
       scoreBadge.style.display = "none";
     }
@@ -84,35 +115,74 @@ export function initAISuggestion(textarea, overlay) {
     dislikeBtn.disabled = !on;
   }
 
-  async function sendFeedback(liked) {
-    if (!lastPrompt || !lastAcceptedDelta) return;
+  // ── Toast notification ───────────────────────────────────────────────────
+  function showToast(msg) {
+    document.querySelectorAll(".ai-toast").forEach(t => t.remove());
+    const toast = document.createElement("div");
+    toast.className = "ai-toast";
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    // Double rAF ensures the initial opacity:0 is painted before transitioning in
+    requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add("ai-toast-visible")));
+    setTimeout(() => {
+      toast.classList.remove("ai-toast-visible");
+      setTimeout(() => toast.remove(), 400);
+    }, 3500);
+  }
+
+  // ── Feedback ─────────────────────────────────────────────────────────────
+  function buildPayload(liked, desiredResponse = null) {
     const params    = new URLSearchParams(window.location.search);
     const patientId = params.get("pid") || params.get("id");
-    const nurseId   = Number(localStorage.getItem("token")) || null;
+    return {
+      nurse_id:         Number(localStorage.getItem("token")) || null,
+      patient_id:       patientId ? Number(patientId) : null,
+      context:          lastPrompt,
+      response:         lastAcceptedDelta,
+      desired_response: desiredResponse,
+      liked
+    };
+  }
 
-    let desiredResponse = null;
-    if (!liked) {
-      desiredResponse = window.prompt("請輸入您期望的正確回答（可留空）：") ?? "";
-    }
+  async function sendFeedback(liked) {
+    if (!lastPrompt || !lastAcceptedDelta) return;
 
-    try {
-      await apiFetch("/feedback", {
-        method: "POST",
-        body: JSON.stringify({
-          nurse_id:         nurseId,
-          patient_id:       patientId ? Number(patientId) : null,
-          context:          lastPrompt,
-          response:         lastAcceptedDelta,
-          desired_response: desiredResponse,
-          liked
-        })
-      });
-      const btn = liked ? likeBtn : dislikeBtn;
-      btn.style.opacity = "0.4";
-      setTimeout(() => { btn.style.opacity = ""; }, 800);
-    } catch (err) {
-      console.error("Feedback error:", err);
+    if (liked) {
+      // ── 👍: cancel any pending dislike, send immediately ─────────────────
+      if (pendingDislike) {
+        pendingDislike = null;
+        dislikeBtn.classList.remove("ai-feedback-pending");
+      }
+      likeBtn.classList.add("ai-feedback-active");
+      setTimeout(() => likeBtn.classList.remove("ai-feedback-active"), 1400);
+      showToast("謝謝你的回饋，你一個小小的動作都可以改善我們的系統！");
+      try {
+        await apiFetch("/feedback", { method: "POST", body: JSON.stringify(buildPayload(true)) });
+      } catch (err) { console.error("Feedback error:", err); }
+
+    } else {
+      // ── 👎: immediately save the unsatisfied result, then wait for form save
+      pendingDislike = buildPayload(false); // capture snapshot now
+      dislikeBtn.classList.add("ai-feedback-pending");
+      showToast("不滿意的回應已記錄！請修改後按儲存，系統將一併記錄您的修改。");
+      // Send the "unsatisfied" record right away (desired_response still null)
+      try {
+        await apiFetch("/feedback", { method: "POST", body: JSON.stringify(pendingDislike) });
+      } catch (err) { console.error("Feedback error:", err); }
     }
+  }
+
+  // On form save: send the "satisfied" result (what the user ended up writing)
+  const form = textarea.closest("form");
+  if (form) {
+    form.addEventListener("submit", () => {
+      if (!pendingDislike) return;
+      const payload = { ...pendingDislike, desired_response: textarea.value };
+      pendingDislike = null;
+      dislikeBtn.classList.remove("ai-feedback-pending");
+      apiFetch("/feedback", { method: "POST", body: JSON.stringify(payload) })
+        .catch(err => console.error("Feedback (desired) error:", err));
+    });
   }
 
   // ── Overlay renderer ──────────────────────────────────────────────────────
@@ -123,7 +193,7 @@ export function initAISuggestion(textarea, overlay) {
         <span style="color: #999; font-style: italic;">正在 AI 補全...</span>`;
       return;
     }
-    if (!suggestion) { overlay.innerHTML = ""; return; }
+    if (!suggestion) { overlay.innerHTML = ""; suggestionShownAt = null; return; }
     let displaySuggestion = suggestion;
     if (aiRef.type !== "multi-step-options" && suggestion.startsWith(prefix)) {
       displaySuggestion = suggestion.slice(prefix.length);
@@ -131,6 +201,7 @@ export function initAISuggestion(textarea, overlay) {
     overlay.innerHTML = `
       <span style="color: transparent;">${prefix}</span>
       <span style="color: #ccc;">${displaySuggestion}</span>`;
+    suggestionShownAt = Date.now(); // record when the suggestion first appeared
   }
 
   // ── Reset ─────────────────────────────────────────────────────────────────
@@ -145,6 +216,9 @@ export function initAISuggestion(textarea, overlay) {
     aiRef.activeIndex = 0;
     aiRef.full = null;
     overlay.innerHTML = "";
+    suggestionShownAt = null;
+    currentScore = null;
+    setScore(null);
   }
 
   function isChinese(char) { return /[一-龥]/.test(char); }
@@ -190,7 +264,7 @@ export function initAISuggestion(textarea, overlay) {
     }
 
     if (aiRef.phase === "label") {
-      aiRef.options       = remainingSteps.map(s => s.label);
+      aiRef.options        = remainingSteps.map(s => s.label);
       aiRef.currentMapping = remainingSteps.map(s => s.originalIndex);
     } else {
       const currentStep = aiRef.steps[aiRef.currentStepIndex];
@@ -202,7 +276,7 @@ export function initAISuggestion(textarea, overlay) {
             finalOptions = [`：${bmiData}`];
           } else if (currentStep.label.includes("BMI結果")) {
             let index = 1;
-            if (bmiData < 18.5)                         index = 0;
+            if      (bmiData < 18.5)                    index = 0;
             else if (bmiData >= 24 && bmiData < 27)     index = 1;
             else if (bmiData >= 27 && bmiData < 30)     index = 2;
             else if (bmiData >= 30)                     index = 3;
@@ -255,15 +329,14 @@ export function initAISuggestion(textarea, overlay) {
 
       if (!res.completions?.length) { resetAI(); return; }
 
-      // Score display
+      // Score — try top-level first, then inside first completion
       const score = res.score ?? res.completions[0]?.score ?? null;
       setScore(score);
 
-      // Track prompt for feedback
       lastPrompt = prompt;
 
-      const skill    = res.completions[0];
-      aiRef.type     = skill.type;
+      const skill = res.completions[0];
+      aiRef.type  = skill.type;
 
       if (skill.type === "multi-step-options") {
         aiRef.steps = skill.steps;
@@ -305,7 +378,7 @@ export function initAISuggestion(textarea, overlay) {
     if (aiRef.type === "multi-step-options") { renderOverlay(text, aiRef.full); return; }
     if (!text.trim()) { resetAI(); return; }
 
-    justAccepted = false; // manual typing resets accept state
+    justAccepted = false; // manual typing resets the double-Tab state
 
     typingTimerFast = setTimeout(() => {
       clearTimeout(typingTimerSlow);
@@ -321,31 +394,43 @@ export function initAISuggestion(textarea, overlay) {
   // ── Keydown listener ──────────────────────────────────────────────────────
   textarea.addEventListener("keydown", (e) => {
 
-    // Ctrl+Z / Cmd+Z — Undo
+    // Ctrl+Z / Cmd+Z — undo last Tab completion, re-show AI suggestion
     if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === "z") {
       e.preventDefault();
       if (undoStack.length > 0) {
         redoStack.push(textarea.value);
         textarea.value = undoStack.pop();
-        resetAI();
         justAccepted = false;
+        resetAI();
+        if (textarea.value.trim()) callAI(textarea.value);
       }
       return;
     }
 
-    // Ctrl+Y / Ctrl+Shift+Z / Cmd+Shift+Z — Redo
+    // Ctrl+Y / Ctrl+Shift+Z / Cmd+Shift+Z — redo, re-show AI suggestion
     if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.shiftKey && e.key === "z"))) {
       e.preventDefault();
       if (redoStack.length > 0) {
         undoStack.push(textarea.value);
         textarea.value = redoStack.pop();
-        resetAI();
         justAccepted = false;
+        resetAI();
+        if (textarea.value.trim()) callAI(textarea.value);
       }
       return;
     }
 
-    // Arrow up / down — cycle options
+    // Shift+R — regenerate (discard current suggestion, call AI again)
+    if (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey && e.key.toLowerCase() === "r") {
+      if (textarea.value.trim()) {
+        e.preventDefault();
+        resetAI();
+        callAI(textarea.value);
+      }
+      return;
+    }
+
+    // Arrow up / down — cycle through options
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       if (!aiRef.options?.length) return;
       e.preventDefault();
@@ -356,11 +441,11 @@ export function initAISuggestion(textarea, overlay) {
       return;
     }
 
-    // Tab
+    // Tab — accept suggestion; second Tab triggers next AI call
     if (e.key === "Tab") {
       e.preventDefault();
 
-      // Second Tab after acceptance → trigger next AI call
+      // Second Tab after an acceptance → trigger new AI call
       if (justAccepted && !aiRef.options?.length) {
         justAccepted = false;
         callAI(textarea.value);
@@ -369,6 +454,20 @@ export function initAISuggestion(textarea, overlay) {
 
       const chosen = aiRef.full;
       if (!chosen) return;
+
+      // ── Confirmation guard: warn if accepted too fast or score < 60 ────────
+      const isTooFast  = suggestionShownAt != null && (Date.now() - suggestionShownAt < 1000);
+      const isLowScore = currentScore != null && currentScore < 60;
+      if (isTooFast || isLowScore) {
+        const reasons = [];
+        if (isTooFast)  reasons.push("確認速度過快（建議仔細閱讀）");
+        if (isLowScore) reasons.push(`AI 信心分數較低（${currentScore} 分）`);
+        const preview = chosen.length > 80 ? chosen.slice(0, 80) + "…" : chosen;
+        const ok = window.confirm(
+          `⚠️ 請確認內容是否正確\n\n原因：${reasons.join("、")}\n\n補全內容：\n"${preview}"\n\n確定接受此補全？`
+        );
+        if (!ok) return;
+      }
 
       saveUndo();
       const beforeValue = textarea.value;
@@ -397,11 +496,9 @@ export function initAISuggestion(textarea, overlay) {
         }
 
         updateStepState();
+        // All steps done → wait for next Tab before calling AI
+        if (aiRef.type === null) justAccepted = true;
 
-        // All multi-step steps done → wait for next Tab before calling AI
-        if (aiRef.type === null) {
-          justAccepted = true;
-        }
       } else {
         const text    = textarea.value;
         const trigger = text.split(/[\s\n]/).pop();
