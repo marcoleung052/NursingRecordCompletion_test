@@ -518,7 +518,7 @@ export function initAISuggestion(textarea, overlay) {
 
       // ── Confirmation guard: only for regular completions, NOT fixed-format templates
       if (aiRef.type !== "multi-step-options") {
-        const isTooFast  = suggestionShownAt != null && (Date.now() - suggestionShownAt < 1000);
+        const isTooFast  = suggestionShownAt != null && (Date.now() - suggestionShownAt < 500);
         const isLowScore = currentScore != null && currentScore < 60;
         if (isTooFast || isLowScore) {
           const reasons = [];
