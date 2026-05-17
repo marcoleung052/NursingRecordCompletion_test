@@ -15,13 +15,45 @@ export function initAISuggestion(textarea, overlay) {
   let typingTimerSlow = null;
   let currentController = null;
 
-  // ── Undo / Redo (stores textarea value strings) ───────────────────────────
-  // Only tracks Tab-completion events; Ctrl+Z restores and re-fetches suggestion
+  // ── Undo / Redo — each entry stores full textarea + AI overlay state ────────
   const undoStack = [];
   const redoStack = [];
 
+  function captureCurrentState() {
+    return {
+      value:              textarea.value,
+      overlayHTML:        overlay.innerHTML,
+      aiType:             aiRef.type,
+      aiOptions:          [...(aiRef.options || [])],
+      aiFull:             aiRef.full,
+      aiActiveIndex:      aiRef.activeIndex,
+      aiPhase:            aiRef.phase,
+      aiCurrentStepIndex: aiRef.currentStepIndex,
+      aiCurrentMapping:   [...(aiRef.currentMapping || [])],
+      aiSteps:            JSON.parse(JSON.stringify(aiRef.steps || [])),
+      aiCompletedIndices: [...aiRef.completedIndices]   // Set → array for storage
+    };
+  }
+
+  function applyState(state) {
+    textarea.value          = state.value;
+    overlay.innerHTML       = state.overlayHTML;
+    aiRef.isCalling         = false;
+    aiRef.type              = state.aiType;
+    aiRef.options           = [...(state.aiOptions || [])];
+    aiRef.full              = state.aiFull;
+    aiRef.activeIndex       = state.aiActiveIndex ?? 0;
+    aiRef.phase             = state.aiPhase ?? "label";
+    aiRef.currentStepIndex  = state.aiCurrentStepIndex ?? null;
+    aiRef.currentMapping    = [...(state.aiCurrentMapping || [])];
+    aiRef.steps             = JSON.parse(JSON.stringify(state.aiSteps || []));
+    aiRef.completedIndices  = new Set(state.aiCompletedIndices || []);
+    // Restore timer so the fast-accept guard works correctly for the restored suggestion
+    suggestionShownAt = state.aiFull ? Date.now() : null;
+  }
+
   function saveUndo() {
-    undoStack.push(textarea.value);
+    undoStack.push(captureCurrentState());
     redoStack.length = 0;
   }
 
@@ -30,6 +62,7 @@ export function initAISuggestion(textarea, overlay) {
   let lastPrompt = null;
   let lastAcceptedDelta = null;
   let justAccepted = false;
+  let waitForTab    = false; // after undo/redo, suppress auto-trigger until Tab pressed
   let pendingDislike    = null; // set on 👎; sent with desired_response on form save
   let currentScore      = null; // numeric score from last AI response
   let suggestionShownAt = null; // timestamp when the current suggestion was rendered
@@ -161,18 +194,19 @@ export function initAISuggestion(textarea, overlay) {
       } catch (err) { console.error("Feedback error:", err); }
 
     } else {
-      // ── 👎: immediately save the unsatisfied result, then wait for form save
-      pendingDislike = buildPayload(false); // capture snapshot now
+      // ── 👎: confirm intent → store locally → POST once when form saves ───
+      const confirmed = window.confirm(
+        "確認標記此 AI 建議為不滿意？\n\n請確認後修改內容，再按儲存，系統將記錄您的修改作為改進參考。"
+      );
+      if (!confirmed) return;
+
+      pendingDislike = buildPayload(false);  // snapshot: context + bad response
       dislikeBtn.classList.add("ai-feedback-pending");
-      showToast("不滿意的回應已記錄！請修改後按儲存，系統將一併記錄您的修改。");
-      // Send the "unsatisfied" record right away (desired_response still null)
-      try {
-        await apiFetch("/feedback", { method: "POST", body: JSON.stringify(pendingDislike) });
-      } catch (err) { console.error("Feedback error:", err); }
+      showToast("不滿意已標記！請修改內容後按儲存，系統將一併記錄。");
     }
   }
 
-  // On form save: send the "satisfied" result (what the user ended up writing)
+  // On form save: send one POST with the satisfied result (what user ended up writing)
   const form = textarea.closest("form");
   if (form) {
     form.addEventListener("submit", () => {
@@ -181,7 +215,7 @@ export function initAISuggestion(textarea, overlay) {
       pendingDislike = null;
       dislikeBtn.classList.remove("ai-feedback-pending");
       apiFetch("/feedback", { method: "POST", body: JSON.stringify(payload) })
-        .catch(err => console.error("Feedback (desired) error:", err));
+        .catch(err => console.error("Feedback error:", err));
     });
   }
 
@@ -329,14 +363,16 @@ export function initAISuggestion(textarea, overlay) {
 
       if (!res.completions?.length) { resetAI(); return; }
 
-      // Score — try top-level first, then inside first completion
-      const score = res.score ?? res.completions[0]?.score ?? null;
-      setScore(score);
-
       lastPrompt = prompt;
 
       const skill = res.completions[0];
       aiRef.type  = skill.type;
+
+      // Score only for regular completions; fixed-format templates don't have a meaningful score
+      const score = skill.type !== "multi-step-options"
+        ? (res.score ?? skill.score ?? null)
+        : null;
+      setScore(score);
 
       if (skill.type === "multi-step-options") {
         aiRef.steps = skill.steps;
@@ -374,11 +410,22 @@ export function initAISuggestion(textarea, overlay) {
     const text     = textarea.value;
     const lastChar = text.slice(-1);
 
-    if (lastChar === "\n") { resetAI(); return; }
-    if (aiRef.type === "multi-step-options") { renderOverlay(text, aiRef.full); return; }
-    if (!text.trim()) { resetAI(); return; }
+    if (lastChar === "\n") { resetAI(); waitForTab = false; return; }
+    if (!text.trim())      { resetAI(); waitForTab = false; return; }
 
-    justAccepted = false; // manual typing resets the double-Tab state
+    // After undo/redo: user is fine-tuning — suppress auto-trigger until Tab pressed
+    if (waitForTab) {
+      if (aiRef.type === "multi-step-options") {
+        renderOverlay(text, aiRef.full); // keep multi-step overlay in sync
+      } else if (aiRef.full) {
+        resetAI(); // stale ghost text no longer matches new content
+      }
+      return;
+    }
+
+    if (aiRef.type === "multi-step-options") { renderOverlay(text, aiRef.full); return; }
+
+    justAccepted = false;
 
     typingTimerFast = setTimeout(() => {
       clearTimeout(typingTimerSlow);
@@ -394,28 +441,26 @@ export function initAISuggestion(textarea, overlay) {
   // ── Keydown listener ──────────────────────────────────────────────────────
   textarea.addEventListener("keydown", (e) => {
 
-    // Ctrl+Z / Cmd+Z — undo last Tab completion, re-show AI suggestion
+    // Ctrl+Z / Cmd+Z — undo last Tab completion, restore saved ghost text
     if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === "z") {
       e.preventDefault();
       if (undoStack.length > 0) {
-        redoStack.push(textarea.value);
-        textarea.value = undoStack.pop();
+        redoStack.push(captureCurrentState());
+        applyState(undoStack.pop());
         justAccepted = false;
-        resetAI();
-        if (textarea.value.trim()) callAI(textarea.value);
+        waitForTab   = true; // require explicit Tab to trigger next AI call
       }
       return;
     }
 
-    // Ctrl+Y / Ctrl+Shift+Z / Cmd+Shift+Z — redo, re-show AI suggestion
+    // Ctrl+Y / Ctrl+Shift+Z / Cmd+Shift+Z — redo, restore saved ghost text
     if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.shiftKey && e.key === "z"))) {
       e.preventDefault();
       if (redoStack.length > 0) {
-        undoStack.push(textarea.value);
-        textarea.value = redoStack.pop();
+        undoStack.push(captureCurrentState());
+        applyState(redoStack.pop());
         justAccepted = false;
-        resetAI();
-        if (textarea.value.trim()) callAI(textarea.value);
+        waitForTab   = true;
       }
       return;
     }
@@ -441,11 +486,19 @@ export function initAISuggestion(textarea, overlay) {
       return;
     }
 
-    // Tab — accept suggestion; second Tab triggers next AI call
+    // Tab — accept suggestion; or trigger AI when needed
     if (e.key === "Tab") {
       e.preventDefault();
 
-      // Second Tab after an acceptance → trigger new AI call
+      // After undo/redo with no ghost text → call AI explicitly
+      if (waitForTab && !aiRef.options?.length) {
+        waitForTab = false;
+        callAI(textarea.value);
+        return;
+      }
+      waitForTab = false; // ghost text present — fall through to accept it
+
+      // After previous acceptance with no new suggestion yet → call AI
       if (justAccepted && !aiRef.options?.length) {
         justAccepted = false;
         callAI(textarea.value);
