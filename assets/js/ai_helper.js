@@ -413,13 +413,9 @@ export function initAISuggestion(textarea, overlay) {
     if (lastChar === "\n") { resetAI(); waitForTab = false; return; }
     if (!text.trim())      { resetAI(); waitForTab = false; return; }
 
-    // After undo/redo: user is fine-tuning — suppress auto-trigger until Tab pressed
+    // After undo/redo: clear ghost text, suppress auto-trigger — wait for Tab
     if (waitForTab) {
-      if (aiRef.type === "multi-step-options") {
-        renderOverlay(text, aiRef.full); // keep multi-step overlay in sync
-      } else if (aiRef.full) {
-        resetAI(); // stale ghost text no longer matches new content
-      }
+      resetAI();
       return;
     }
 
@@ -490,16 +486,17 @@ export function initAISuggestion(textarea, overlay) {
     if (e.key === "Tab") {
       e.preventDefault();
 
-      // After undo/redo with no ghost text → call AI explicitly
+      // waitForTab mode: no ghost text → explicitly call AI
       if (waitForTab && !aiRef.options?.length) {
         waitForTab = false;
         callAI(textarea.value);
         return;
       }
-      waitForTab = false; // ghost text present — fall through to accept it
+      // waitForTab with ghost text: fall through to accept it
+      // (waitForTab intentionally stays true so typing after this still requires Tab)
 
-      // After previous acceptance with no new suggestion yet → call AI
-      if (justAccepted && !aiRef.options?.length) {
+      // Normal double-Tab: after acceptance, no new suggestion yet → call AI
+      if (!waitForTab && justAccepted && !aiRef.options?.length) {
         justAccepted = false;
         callAI(textarea.value);
         return;
@@ -508,18 +505,20 @@ export function initAISuggestion(textarea, overlay) {
       const chosen = aiRef.full;
       if (!chosen) return;
 
-      // ── Confirmation guard: warn if accepted too fast or score < 60 ────────
-      const isTooFast  = suggestionShownAt != null && (Date.now() - suggestionShownAt < 1000);
-      const isLowScore = currentScore != null && currentScore < 60;
-      if (isTooFast || isLowScore) {
-        const reasons = [];
-        if (isTooFast)  reasons.push("確認速度過快（建議仔細閱讀）");
-        if (isLowScore) reasons.push(`AI 信心分數較低（${currentScore} 分）`);
-        const preview = chosen.length > 80 ? chosen.slice(0, 80) + "…" : chosen;
-        const ok = window.confirm(
-          `⚠️ 請確認內容是否正確\n\n原因：${reasons.join("、")}\n\n補全內容：\n"${preview}"\n\n確定接受此補全？`
-        );
-        if (!ok) return;
+      // ── Confirmation guard: only for regular completions, NOT fixed-format templates
+      if (aiRef.type !== "multi-step-options") {
+        const isTooFast  = suggestionShownAt != null && (Date.now() - suggestionShownAt < 1000);
+        const isLowScore = currentScore != null && currentScore < 60;
+        if (isTooFast || isLowScore) {
+          const reasons = [];
+          if (isTooFast)  reasons.push("確認速度過快（建議仔細閱讀）");
+          if (isLowScore) reasons.push(`AI 信心分數較低（${currentScore} 分）`);
+          const preview = chosen.length > 80 ? chosen.slice(0, 80) + "…" : chosen;
+          const ok = window.confirm(
+            `⚠️ 請確認內容是否正確\n\n原因：${reasons.join("、")}\n\n補全內容：\n"${preview}"\n\n確定接受此補全？`
+          );
+          if (!ok) return;
+        }
       }
 
       saveUndo();
