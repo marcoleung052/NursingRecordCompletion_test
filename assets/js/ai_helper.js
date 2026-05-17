@@ -61,8 +61,8 @@ export function initAISuggestion(textarea, overlay) {
   let maxTokens = 128;
   let lastPrompt = null;
   let lastAcceptedDelta = null;
-  let justAccepted = false;
-  let waitForTab    = false; // after undo/redo, suppress auto-trigger until Tab pressed
+  let hasAutoTriggered = false; // true after first auto-trigger; all further AI calls need Tab
+  let waitForTab       = false; // after undo/redo, suppress auto-trigger until Tab pressed
   let pendingDislike    = null; // set on 👎; sent with desired_response on form save
   let currentScore      = null; // numeric score from last AI response
   let suggestionShownAt = null; // timestamp when the current suggestion was rendered
@@ -347,6 +347,7 @@ export function initAISuggestion(textarea, overlay) {
     const patientId = params.get("pid") || params.get("id");
     if (!patientId) { resetAI(); return; }
 
+    hasAutoTriggered = true; // first AI call marks end of auto-trigger mode
     if (currentController) currentController.abort();
     currentController = new AbortController();
     aiRef.isCalling = true;
@@ -413,15 +414,20 @@ export function initAISuggestion(textarea, overlay) {
     if (lastChar === "\n") { resetAI(); waitForTab = false; return; }
     if (!text.trim())      { resetAI(); waitForTab = false; return; }
 
-    // After undo/redo: clear ghost text, suppress auto-trigger — wait for Tab
+    // After undo/redo: clear ghost text, no auto-trigger
     if (waitForTab) {
       resetAI();
       return;
     }
 
-    if (aiRef.type === "multi-step-options") { renderOverlay(text, aiRef.full); return; }
+    // After first auto-trigger: all AI calls require Tab — never auto-trigger again
+    if (hasAutoTriggered) {
+      if (aiRef.type === "multi-step-options") renderOverlay(text, aiRef.full);
+      return;
+    }
 
-    justAccepted = false;
+    // ── First-time auto-trigger only ────────────────────────────────────────
+    if (aiRef.type === "multi-step-options") { renderOverlay(text, aiRef.full); return; }
 
     typingTimerFast = setTimeout(() => {
       clearTimeout(typingTimerSlow);
@@ -437,14 +443,25 @@ export function initAISuggestion(textarea, overlay) {
   // ── Keydown listener ──────────────────────────────────────────────────────
   textarea.addEventListener("keydown", (e) => {
 
+    // ── Input lock: while generating or suggestion visible, only 4 keys allowed ──
+    if (aiRef.isCalling || aiRef.options?.length) {
+      const isModifier = ["Control", "Shift", "Alt", "Meta"].includes(e.key);
+      const isAllowed  = isModifier
+        || e.key === "Escape"
+        || e.key === "Tab"
+        || e.key === "ArrowUp"
+        || e.key === "ArrowDown"
+        || (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey && e.key.toLowerCase() === "r");
+      if (!isAllowed) { e.preventDefault(); return; }
+    }
+
     // Ctrl+Z / Cmd+Z — undo last Tab completion, restore saved ghost text
     if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === "z") {
       e.preventDefault();
       if (undoStack.length > 0) {
         redoStack.push(captureCurrentState());
         applyState(undoStack.pop());
-        justAccepted = false;
-        waitForTab   = true; // require explicit Tab to trigger next AI call
+        waitForTab = true; // require explicit Tab to trigger next AI call
       }
       return;
     }
@@ -455,16 +472,16 @@ export function initAISuggestion(textarea, overlay) {
       if (redoStack.length > 0) {
         undoStack.push(captureCurrentState());
         applyState(redoStack.pop());
-        justAccepted = false;
-        waitForTab   = true;
+        waitForTab = true;
       }
       return;
     }
 
-    // Shift+R — regenerate (discard current suggestion, call AI again)
+    // Shift+R — regenerate (abort current, call AI again)
     if (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey && e.key.toLowerCase() === "r") {
+      e.preventDefault(); // always prevent "R" from typing
       if (textarea.value.trim()) {
-        e.preventDefault();
+        if (currentController) { currentController.abort(); currentController = null; }
         resetAI();
         callAI(textarea.value);
       }
@@ -486,21 +503,15 @@ export function initAISuggestion(textarea, overlay) {
     if (e.key === "Tab") {
       e.preventDefault();
 
-      // waitForTab mode: no ghost text → explicitly call AI
-      if (waitForTab && !aiRef.options?.length) {
+      // No ghost text showing: call AI if allowed
+      if (!aiRef.options?.length) {
+        if (!hasAutoTriggered) return; // before first auto-trigger, Tab does nothing here
         waitForTab = false;
         callAI(textarea.value);
         return;
       }
-      // waitForTab with ghost text: fall through to accept it
-      // (waitForTab intentionally stays true so typing after this still requires Tab)
-
-      // Normal double-Tab: after acceptance, no new suggestion yet → call AI
-      if (!waitForTab && justAccepted && !aiRef.options?.length) {
-        justAccepted = false;
-        callAI(textarea.value);
-        return;
-      }
+      // Ghost text present: fall through to accept it
+      // (if waitForTab, it stays true so typing after acceptance still requires Tab)
 
       const chosen = aiRef.full;
       if (!chosen) return;
@@ -548,8 +559,6 @@ export function initAISuggestion(textarea, overlay) {
         }
 
         updateStepState();
-        // All steps done → wait for next Tab before calling AI
-        if (aiRef.type === null) justAccepted = true;
 
       } else {
         const text    = textarea.value;
@@ -568,15 +577,15 @@ export function initAISuggestion(textarea, overlay) {
         setFeedbackEnabled(true);
 
         resetAI();
-        justAccepted = true; // next Tab triggers a new AI call
       }
 
       textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
     }
 
     if (e.key === "Escape") {
+      if (currentController) { currentController.abort(); currentController = null; }
       resetAI();
-      justAccepted = false;
+      waitForTab = false;
     }
   });
 }
