@@ -443,10 +443,12 @@ export function initAISuggestion(textarea, overlay) {
   // ── Keydown listener ──────────────────────────────────────────────────────
   textarea.addEventListener("keydown", (e) => {
 
-    // ── Input lock: while generating or suggestion visible, only 4 keys allowed ──
+    // ── Input lock: while generating or suggestion visible ───────────────────
     if (aiRef.isCalling || aiRef.options?.length) {
       const isModifier = ["Control", "Shift", "Alt", "Meta"].includes(e.key);
-      const isAllowed  = isModifier
+      const isCtrlZ    = (e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === "z";
+      const isCtrlY    = (e.ctrlKey || e.metaKey) && (e.key === "y" || (e.shiftKey && e.key === "z"));
+      const isAllowed  = isModifier || isCtrlZ || isCtrlY
         || e.key === "Escape"
         || e.key === "Tab"
         || e.key === "ArrowUp"
