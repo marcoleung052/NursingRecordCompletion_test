@@ -59,8 +59,10 @@ export function initAISuggestion(textarea, overlay) {
 
   // ── Config & feedback state ───────────────────────────────────────────────
   let maxTokens = 128;
+  let aiMode = 1; // 1=RAG快速  2=精確
   let lastPrompt = null;
   let lastAcceptedDelta = null;
+  let textareaAfterAccept = null; // textarea value right after the last AI suggestion was accepted
   let hasAutoTriggered = false; // true after first auto-trigger; all further AI calls need Tab
   let waitForTab       = false; // after undo/redo, suppress auto-trigger until Tab pressed
   let pendingDislike    = null; // set on 👎; sent with desired_response on form save
@@ -79,7 +81,8 @@ export function initAISuggestion(textarea, overlay) {
     <span class="ai-ctrl-sep"></span>
     <span class="ai-score-badge"></span>
     <button type="button" class="ai-feedback-btn" data-fb="like"    title="讚"   disabled>👍</button>
-    <button type="button" class="ai-feedback-btn" data-fb="dislike" title="倒讚" disabled>👎</button>`;
+    <button type="button" class="ai-feedback-btn" data-fb="dislike" title="倒讚" disabled>👎</button>
+    <button type="button" class="ai-mode-btn" title="切換模式">⚡ 快速</button>`;
 
   const datetimeInput = document.getElementById("datetime");
   if (datetimeInput) {
@@ -111,6 +114,7 @@ export function initAISuggestion(textarea, overlay) {
   const scoreBadge = panel.querySelector(".ai-score-badge");
   const likeBtn    = panel.querySelector("[data-fb='like']");
   const dislikeBtn = panel.querySelector("[data-fb='dislike']");
+  const modeBtn    = panel.querySelector(".ai-mode-btn");
 
   sliderEl.addEventListener("input", () => {
     maxTokens = Number(sliderEl.value);
@@ -118,6 +122,10 @@ export function initAISuggestion(textarea, overlay) {
   });
   likeBtn.addEventListener("click",    () => sendFeedback(true));
   dislikeBtn.addEventListener("click", () => sendFeedback(false));
+  modeBtn.addEventListener("click", () => {
+    aiMode = aiMode === 1 ? 2 : 1;
+    modeBtn.textContent = aiMode === 1 ? "⚡ 快速" : "🎯 精確";
+  });
 
   // Fetch default max_tokens from backend config
   apiFetch("/predict/config").then(cfg => {
@@ -164,7 +172,7 @@ export function initAISuggestion(textarea, overlay) {
   }
 
   // ── Feedback ─────────────────────────────────────────────────────────────
-  function buildPayload(liked, desiredResponse = null) {
+  function buildPayload(desiredResponse = null) {
     const params    = new URLSearchParams(window.location.search);
     const patientId = params.get("pid") || params.get("id");
     return {
@@ -173,7 +181,6 @@ export function initAISuggestion(textarea, overlay) {
       context:          lastPrompt,
       response:         lastAcceptedDelta,
       desired_response: desiredResponse,
-      liked
     };
   }
 
@@ -190,7 +197,7 @@ export function initAISuggestion(textarea, overlay) {
       setTimeout(() => likeBtn.classList.remove("ai-feedback-active"), 1400);
       showToast("謝謝你的回饋，你一個小小的動作都可以改善我們的系統！");
       try {
-        await apiFetch("/feedback", { method: "POST", body: JSON.stringify(buildPayload(true)) });
+        await apiFetch("/feedback", { method: "POST", body: JSON.stringify({ ...buildPayload(null), rating: 4 }) });
       } catch (err) { console.error("Feedback error:", err); }
 
     } else {
@@ -200,22 +207,34 @@ export function initAISuggestion(textarea, overlay) {
       );
       if (!confirmed) return;
 
-      pendingDislike = buildPayload(false);  // snapshot: context + bad response
+      pendingDislike = buildPayload();  // snapshot: context + bad response
       dislikeBtn.classList.add("ai-feedback-pending");
       showToast("不滿意已標記！請修改內容後按儲存，系統將一併記錄。");
     }
   }
 
-  // On form save: send one POST with the satisfied result (what user ended up writing)
+  // On form save: send one POST with a 1-4 rating reflecting how the AI suggestion was used
   const form = textarea.closest("form");
   if (form) {
     form.addEventListener("submit", () => {
-      if (!pendingDislike) return;
-      const payload = { ...pendingDislike, desired_response: textarea.value };
-      pendingDislike = null;
-      dislikeBtn.classList.remove("ai-feedback-pending");
-      apiFetch("/feedback", { method: "POST", body: JSON.stringify(payload) })
-        .catch(err => console.error("Feedback error:", err));
+      if (!lastAcceptedDelta) return; // 這次沒有接受過任何 AI 補全，不送
+
+      if (pendingDislike) {
+        // Level 1：👎 已標記
+        const payload = { ...pendingDislike, desired_response: textarea.value, rating: 1 };
+        pendingDislike = null;
+        dislikeBtn.classList.remove("ai-feedback-pending");
+        apiFetch("/feedback", { method: "POST", body: JSON.stringify(payload) }).catch(console.error);
+        return;
+      }
+
+      // Level 2 or 3：自動偵測有沒有被改過
+      const wasModified = textareaAfterAccept !== null && textarea.value !== textareaAfterAccept;
+      const payload = {
+        ...buildPayload(wasModified ? textarea.value : null),
+        rating: wasModified ? 2 : 3
+      };
+      apiFetch("/feedback", { method: "POST", body: JSON.stringify(payload) }).catch(console.error);
     });
   }
 
@@ -356,7 +375,7 @@ export function initAISuggestion(textarea, overlay) {
     try {
       const res = await apiFetch("/predict", {
         method: "POST",
-        body: JSON.stringify({ prompt, patient_id: patientId, max_tokens: maxTokens }),
+        body: JSON.stringify({ prompt, patient_id: patientId, max_tokens: maxTokens, mode: aiMode }),
         signal: currentController.signal
       });
       currentController = null;
@@ -557,6 +576,7 @@ export function initAISuggestion(textarea, overlay) {
         const delta = textarea.value.slice(beforeValue.length);
         if (delta) {
           lastAcceptedDelta = delta;
+          textareaAfterAccept = textarea.value;
           setFeedbackEnabled(true);
         }
 
@@ -576,6 +596,7 @@ export function initAISuggestion(textarea, overlay) {
         textarea.value += space + chosen;
 
         lastAcceptedDelta = textarea.value.slice(beforeValue.length);
+        textareaAfterAccept = textarea.value;
         setFeedbackEnabled(true);
 
         resetAI();
