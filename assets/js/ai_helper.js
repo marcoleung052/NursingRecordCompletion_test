@@ -82,7 +82,11 @@ export function initAISuggestion(textarea, overlay) {
     <span class="ai-score-badge"></span>
     <button type="button" class="ai-feedback-btn" data-fb="like"    title="讚"   disabled>👍</button>
     <button type="button" class="ai-feedback-btn" data-fb="dislike" title="倒讚" disabled>👎</button>
-    <button type="button" class="ai-mode-btn" title="切換模式">⚡ 快速</button>`;
+    <button type="button" class="ai-mode-toggle" aria-pressed="false" title="切換模式">
+      <span class="ai-mode-thumb"></span>
+      <span class="ai-mode-opt">⚡ 快速</span>
+      <span class="ai-mode-opt">🎯 精確</span>
+    </button>`;
 
   const datetimeInput = document.getElementById("datetime");
   if (datetimeInput) {
@@ -114,7 +118,7 @@ export function initAISuggestion(textarea, overlay) {
   const scoreBadge = panel.querySelector(".ai-score-badge");
   const likeBtn    = panel.querySelector("[data-fb='like']");
   const dislikeBtn = panel.querySelector("[data-fb='dislike']");
-  const modeBtn    = panel.querySelector(".ai-mode-btn");
+  const modeBtn    = panel.querySelector(".ai-mode-toggle");
 
   sliderEl.addEventListener("input", () => {
     maxTokens = Number(sliderEl.value);
@@ -124,7 +128,7 @@ export function initAISuggestion(textarea, overlay) {
   dislikeBtn.addEventListener("click", () => sendFeedback(false));
   modeBtn.addEventListener("click", () => {
     aiMode = aiMode === 1 ? 2 : 1;
-    modeBtn.textContent = aiMode === 1 ? "⚡ 快速" : "🎯 精確";
+    modeBtn.setAttribute("aria-pressed", aiMode === 2 ? "true" : "false");
   });
 
   // Fetch default max_tokens from backend config

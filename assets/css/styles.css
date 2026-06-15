@@ -499,6 +499,53 @@ textarea {
   50%       { opacity: 0.55; }
 }
 
+/* Mode toggle — two-segment sliding switch (⚡ 快速 / 🎯 精確) */
+.ai-mode-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 2px;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.ai-mode-toggle .ai-mode-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc(50% - 2px);
+  height: calc(100% - 4px);
+  background: #fff;
+  border-radius: 999px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.ai-mode-toggle[aria-pressed="true"] .ai-mode-thumb {
+  transform: translateX(100%);
+}
+
+.ai-mode-toggle .ai-mode-opt {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  text-align: center;
+  padding: 3px 10px;
+  white-space: nowrap;
+  color: #94a3b8;
+  transition: color 0.2s ease;
+}
+
+.ai-mode-toggle[aria-pressed="false"] .ai-mode-opt:first-child,
+.ai-mode-toggle[aria-pressed="true"]  .ai-mode-opt:last-child {
+  color: #1e3a8a;
+  font-weight: 600;
+}
+
 /* Toast notification */
 .ai-toast {
   position: fixed;
